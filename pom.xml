@@ -13,7 +13,7 @@
   <version>1.0-SNAPSHOT</version>
 
   <name>Sonar Common Rules</name>
-  <description></description>
+  <description>This library provides common Sonar rules that can be embeded by any language plugin.</description>
   <url />
   <inceptionYear>2012</inceptionYear>
   <organization>
