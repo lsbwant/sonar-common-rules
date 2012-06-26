@@ -28,8 +28,6 @@ import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.measures.Measure;
 import org.sonar.api.measures.Metric;
 import org.sonar.api.profiles.RulesProfile;
-import org.sonar.api.resources.Java;
-import org.sonar.api.resources.Language;
 import org.sonar.api.resources.Resource;
 import org.sonar.api.rules.Rule;
 import org.sonar.api.rules.RulePriority;
@@ -50,9 +48,6 @@ public final class CommonChecksDecoratorTest {
   private static final String REPO_KEY = CommonRulesConstants.REPO_KEY_PREFIX + "fake";
 
   @Mock
-  private Language language;
-
-  @Mock
   Resource resource;
 
   @Mock
@@ -63,16 +58,14 @@ public final class CommonChecksDecoratorTest {
   @Before
   public void init() {
     MockitoAnnotations.initMocks(this);
-    when(language.getKey()).thenReturn("fake");
-    when(language.getName()).thenReturn("Fake");
 
-    RulesProfile profile = RulesProfile.create("My SQALE profile", Java.INSTANCE.getKey());
+    RulesProfile profile = RulesProfile.create("My SQALE profile", "fake");
     Rule duplicatedBlocksRule = Rule.create(REPO_KEY, "DuplicatedBlocks", null);
     profile.activateRule(duplicatedBlocksRule, RulePriority.MAJOR);
     Rule lineCoverageRule = Rule.create(REPO_KEY, "InsufficientLineCoverage", null);
     profile.activateRule(lineCoverageRule, RulePriority.MAJOR);
 
-    decorator = new CommonChecksDecorator(profile, language);
+    decorator = new CommonChecksDecorator(profile);
   }
 
   @Test
@@ -94,7 +87,7 @@ public final class CommonChecksDecoratorTest {
 
   @Test
   public void shouldNotExecuteOnProject() {
-    decorator = new CommonChecksDecorator(RulesProfile.create("My SQALE profile", "fake"), language);
+    decorator = new CommonChecksDecorator(RulesProfile.create("My SQALE profile", "fake"));
     assertThat(decorator.shouldExecuteOnProject(null), is(false));
   }
 

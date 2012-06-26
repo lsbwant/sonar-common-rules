@@ -23,7 +23,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.sonar.api.resources.Language;
 import org.sonar.api.rules.AnnotationRuleParser;
 import org.sonar.api.rules.Rule;
 import org.sonar.commonrules.internal.CommonChecksDecorator;
@@ -35,15 +34,18 @@ import java.util.Map;
 
 public class CommonRulesEngine {
 
-  private Language language;
+  private String languageKey;
+  private String languageName;
   private Map<String, Rule> availableRulesbyKey = Maps.newHashMap();
   private List<CommonRule> commonRules = Lists.newArrayList();
 
-  public CommonRulesEngine(Language language) {
-    Preconditions.checkNotNull(language, "The language can't be null.");
+  public CommonRulesEngine(String languageKey, String languageName) {
+    Preconditions.checkNotNull(languageKey, "The language key can't be null.");
+    Preconditions.checkNotNull(languageName, "The language name can't be null.");
 
-    this.language = language;
-    List<Rule> availableRules = new AnnotationRuleParser().parse(CommonRulesConstants.REPO_KEY_PREFIX + language.getKey(), CommonRulesConstants.CLASSES);
+    this.languageKey = languageKey;
+    this.languageName = languageName;
+    List<Rule> availableRules = new AnnotationRuleParser().parse(CommonRulesConstants.REPO_KEY_PREFIX + this.languageKey, CommonRulesConstants.CLASSES);
     for (Rule rule : availableRules) {
       availableRulesbyKey.put(rule.getKey(), rule);
     }
@@ -66,7 +68,7 @@ public class CommonRulesEngine {
     List extensions = Lists.newArrayList();
 
     // the rule repository created based on the configured rules
-    extensions.add(new CommonRulesRepository(language, getDeclaredRules()));
+    extensions.add(new CommonRulesRepository(languageKey, languageName, getDeclaredRules()));
 
     // and the decorator which runs the checks
     extensions.add(CommonChecksDecorator.class);

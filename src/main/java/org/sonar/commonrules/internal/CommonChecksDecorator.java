@@ -28,7 +28,6 @@ import org.sonar.api.checks.AnnotationCheckFactory;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.measures.Metric;
 import org.sonar.api.profiles.RulesProfile;
-import org.sonar.api.resources.Language;
 import org.sonar.api.resources.Project;
 import org.sonar.api.resources.Resource;
 import org.sonar.commonrules.internal.checks.CommonCheck;
@@ -50,8 +49,8 @@ public class CommonChecksDecorator implements Decorator {
   }
 
   @SuppressWarnings("unchecked")
-  public CommonChecksDecorator(RulesProfile profile, Language language) {
-    checkFactory = AnnotationCheckFactory.create(profile, CommonRulesConstants.REPO_KEY_PREFIX + language.getKey(), CommonRulesConstants.CLASSES);
+  public CommonChecksDecorator(RulesProfile profile) {
+    checkFactory = AnnotationCheckFactory.create(profile, CommonRulesConstants.REPO_KEY_PREFIX + profile.getLanguage(), CommonRulesConstants.CLASSES);
     activeChecks = checkFactory.getChecks();
   }
 

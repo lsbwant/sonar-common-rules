@@ -19,7 +19,6 @@
  */
 package org.sonar.commonrules.internal;
 
-import org.sonar.api.resources.Language;
 import org.sonar.api.rules.Rule;
 import org.sonar.api.rules.RuleRepository;
 
@@ -29,9 +28,9 @@ public class CommonRulesRepository extends RuleRepository {
 
   private List<Rule> rules;
 
-  public CommonRulesRepository(Language language, List<Rule> rules) {
-    super(CommonRulesConstants.REPO_KEY_PREFIX + language.getKey(), language.getKey());
-    setName("Common " + language.getName());
+  public CommonRulesRepository(String languageKey, String languageName, List<Rule> rules) {
+    super(CommonRulesConstants.REPO_KEY_PREFIX + languageKey, languageKey);
+    setName("Common " + languageName);
     this.rules = rules;
   }
 

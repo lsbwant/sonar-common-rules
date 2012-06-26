@@ -22,20 +22,13 @@ package org.sonar.commonrules.internal;
 import com.google.common.collect.Lists;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.sonar.api.resources.Language;
 import org.sonar.api.rules.Rule;
 
 import java.util.List;
 
 import static org.fest.assertions.Assertions.assertThat;
-import static org.mockito.Mockito.when;
 
 public final class CommonRulesRepositoryTest {
-
-  @Mock
-  private Language language;
 
   private List<Rule> rules;
 
@@ -43,13 +36,9 @@ public final class CommonRulesRepositoryTest {
 
   @Before
   public void init() throws Exception {
-    MockitoAnnotations.initMocks(this);
-    when(language.getKey()).thenReturn("fake");
-    when(language.getName()).thenReturn("Fake");
-
     rules = Lists.newArrayList(Rule.create("common-fake", "FakeRule"));
 
-    repository = new CommonRulesRepository(language, rules);
+    repository = new CommonRulesRepository("fake", "Fake", rules);
   }
 
   @Test

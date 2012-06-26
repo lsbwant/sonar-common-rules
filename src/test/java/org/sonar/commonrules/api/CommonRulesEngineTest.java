@@ -22,9 +22,6 @@ package org.sonar.commonrules.api;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.sonar.api.resources.Language;
 import org.sonar.api.rules.Rule;
 import org.sonar.commonrules.internal.CommonRulesConstants;
 import org.sonar.commonrules.internal.CommonRulesRepository;
@@ -32,25 +29,17 @@ import org.sonar.commonrules.internal.CommonRulesRepository;
 import java.util.List;
 
 import static org.fest.assertions.Assertions.assertThat;
-import static org.mockito.Mockito.when;
 
 public final class CommonRulesEngineTest {
 
   @org.junit.Rule
   public ExpectedException thrown = ExpectedException.none();
 
-  @Mock
-  private Language language;
-
   private CommonRulesEngine engine;
 
   @Before
   public void init() throws Exception {
-    MockitoAnnotations.initMocks(this);
-    when(language.getKey()).thenReturn("fake");
-    when(language.getName()).thenReturn("Fake");
-
-    engine = new CommonRulesEngine(language);
+    engine = new CommonRulesEngine("fake", "Fake");
   }
 
   @Test
