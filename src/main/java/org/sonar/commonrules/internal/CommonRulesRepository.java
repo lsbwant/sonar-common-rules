@@ -28,9 +28,9 @@ public class CommonRulesRepository extends RuleRepository {
 
   private List<Rule> rules;
 
-  public CommonRulesRepository(String languageKey, String languageName, List<Rule> rules) {
+  public CommonRulesRepository(String languageKey, List<Rule> rules) {
     super(CommonRulesConstants.REPO_KEY_PREFIX + languageKey, languageKey);
-    setName("Common " + languageName);
+    setName("Common Sonar");
     this.rules = rules;
   }
 

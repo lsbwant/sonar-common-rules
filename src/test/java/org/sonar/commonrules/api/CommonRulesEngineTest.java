@@ -39,7 +39,7 @@ public final class CommonRulesEngineTest {
 
   @Before
   public void init() throws Exception {
-    engine = new CommonRulesEngine("fake", "Fake");
+    engine = new CommonRulesEngine("fake");
   }
 
   @Test

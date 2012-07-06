@@ -35,16 +35,13 @@ import java.util.Map;
 public class CommonRulesEngine {
 
   private String languageKey;
-  private String languageName;
   private Map<String, Rule> availableRulesbyKey = Maps.newHashMap();
   private List<CommonRule> commonRules = Lists.newArrayList();
 
-  public CommonRulesEngine(String languageKey, String languageName) {
+  public CommonRulesEngine(String languageKey) {
     Preconditions.checkNotNull(languageKey, "The language key can't be null.");
-    Preconditions.checkNotNull(languageName, "The language name can't be null.");
 
     this.languageKey = languageKey;
-    this.languageName = languageName;
     List<Rule> availableRules = new AnnotationRuleParser().parse(CommonRulesConstants.REPO_KEY_PREFIX + this.languageKey, CommonRulesConstants.CLASSES);
     for (Rule rule : availableRules) {
       availableRulesbyKey.put(rule.getKey(), rule);
@@ -68,7 +65,7 @@ public class CommonRulesEngine {
     List extensions = Lists.newArrayList();
 
     // the rule repository created based on the configured rules
-    extensions.add(new CommonRulesRepository(languageKey, languageName, getDeclaredRules()));
+    extensions.add(new CommonRulesRepository(languageKey, getDeclaredRules()));
 
     // and the decorator which runs the checks
     extensions.add(CommonChecksDecorator.class);

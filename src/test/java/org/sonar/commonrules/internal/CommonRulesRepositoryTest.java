@@ -38,13 +38,13 @@ public final class CommonRulesRepositoryTest {
   public void init() throws Exception {
     rules = Lists.newArrayList(Rule.create("common-fake", "FakeRule"));
 
-    repository = new CommonRulesRepository("fake", "Fake", rules);
+    repository = new CommonRulesRepository("fake", rules);
   }
 
   @Test
   public void shouldHaveCorrectDefinition() throws Exception {
     assertThat(repository.getKey()).isEqualTo(CommonRulesConstants.REPO_KEY_PREFIX + "fake");
-    assertThat(repository.getName()).isEqualTo("Common Fake");
+    assertThat(repository.getName()).isEqualTo("Common Sonar");
     assertThat(repository.getLanguage()).isEqualTo("fake");
   }
 
