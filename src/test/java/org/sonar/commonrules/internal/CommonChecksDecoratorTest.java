@@ -36,8 +36,6 @@ import org.sonar.commonrules.internal.checks.ViolationCostMatcher;
 import java.util.List;
 
 import static org.fest.assertions.Assertions.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -82,13 +80,13 @@ public final class CommonChecksDecoratorTest {
 
   @Test
   public void shouldExecuteOnProject() {
-    assertThat(decorator.shouldExecuteOnProject(null), is(true));
+    assertThat(decorator.shouldExecuteOnProject(null)).isTrue();
   }
 
   @Test
   public void shouldNotExecuteOnProject() {
     decorator = new CommonChecksDecorator(RulesProfile.create("My SQALE profile", "fake"));
-    assertThat(decorator.shouldExecuteOnProject(null), is(false));
+    assertThat(decorator.shouldExecuteOnProject(null)).isFalse();
   }
 
   @Test

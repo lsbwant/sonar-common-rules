@@ -32,13 +32,16 @@ import org.sonar.commonrules.internal.CommonRulesRepository;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Sonar Common Rules Engine on which rules can be activated.
+ */
 public class CommonRulesEngine {
 
   private String languageKey;
   private Map<String, Rule> availableRulesbyKey = Maps.newHashMap();
   private List<CommonRule> commonRules = Lists.newArrayList();
 
-  public CommonRulesEngine(String languageKey) {
+  CommonRulesEngine(String languageKey) {
     Preconditions.checkNotNull(languageKey, "The language key can't be null.");
 
     this.languageKey = languageKey;
@@ -48,6 +51,12 @@ public class CommonRulesEngine {
     }
   }
 
+  /**
+   * Activate the rule corresponding the the given key.
+   * 
+   * @param ruleKey the rule of the key
+   * @return the rule that will be activated, and on which parameter default values can be specified.
+   */
   public CommonRule activateRule(String ruleKey) {
     Preconditions.checkNotNull(ruleKey, "The rule key can't be null.");
 
@@ -60,8 +69,9 @@ public class CommonRulesEngine {
     return commonRule;
   }
 
+  @VisibleForTesting
   @SuppressWarnings({"rawtypes", "unchecked"})
-  public List<?> getExtensions() {
+  List<?> getExtensions() {
     List extensions = Lists.newArrayList();
 
     // the rule repository created based on the configured rules
