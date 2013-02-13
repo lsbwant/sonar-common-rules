@@ -22,7 +22,9 @@ package org.sonar.commonrules.internal;
 import org.sonar.commonrules.internal.checks.BranchCoverageCheck;
 import org.sonar.commonrules.internal.checks.CommentDensityCheck;
 import org.sonar.commonrules.internal.checks.DuplicatedBlocksCheck;
+import org.sonar.commonrules.internal.checks.FailedUnitTestsCheck;
 import org.sonar.commonrules.internal.checks.LineCoverageCheck;
+import org.sonar.commonrules.internal.checks.SkippedUnitTestsCheck;
 
 import java.util.Arrays;
 import java.util.List;
@@ -49,6 +51,8 @@ public final class CommonRulesConstants {
       DuplicatedBlocksCheck.class,
       LineCoverageCheck.class,
       BranchCoverageCheck.class,
-      CommentDensityCheck.class);
+      CommentDensityCheck.class,
+      SkippedUnitTestsCheck.class,
+      FailedUnitTestsCheck.class);
 
 }
