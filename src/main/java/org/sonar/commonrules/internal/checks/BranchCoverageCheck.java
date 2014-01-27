@@ -20,11 +20,14 @@
 package org.sonar.commonrules.internal.checks;
 
 import org.sonar.api.batch.DecoratorContext;
+import org.sonar.api.batch.rule.ModuleRule;
+import org.sonar.api.component.ResourcePerspectives;
+import org.sonar.api.issue.Issuable;
+import org.sonar.api.issue.Issue;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.measures.MeasureUtils;
 import org.sonar.api.resources.Resource;
 import org.sonar.api.resources.ResourceUtils;
-import org.sonar.api.rules.Violation;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.check.RuleProperty;
@@ -42,9 +45,8 @@ public class BranchCoverageCheck extends CommonCheck {
   @RuleProperty(description = "The minimum required branch coverage ratio.", defaultValue = "" + DEFAULT_RATIO)
   private double minimumBranchCoverageRatio = DEFAULT_RATIO;
 
-  @SuppressWarnings("rawtypes")
   @Override
-  public void checkResource(Resource resource, DecoratorContext context, org.sonar.api.rules.Rule rule) {
+  public void checkResource(Resource resource, DecoratorContext context, ResourcePerspectives perspectives, ModuleRule rule) {
     double lineCoverage = MeasureUtils.getValue(context.getMeasure(CoreMetrics.BRANCH_COVERAGE), 0.0);
     if (ResourceUtils.isEntity(resource) && context.getMeasure(CoreMetrics.BRANCH_COVERAGE) != null
       && lineCoverage < minimumBranchCoverageRatio) {
@@ -53,18 +55,18 @@ public class BranchCoverageCheck extends CommonCheck {
       double conditionsToCoverToReachThreshold = Math.ceil((conditionsToCover * minimumBranchCoverageRatio / 100)
         - (conditionsToCover - uncoveredConditions));
 
-      Violation violation = createViolation(resource, rule, conditionsToCoverToReachThreshold);
-      context.saveViolation(violation);
+      Issuable issuable = perspectives.as(Issuable.class, resource);
+      if (issuable != null) {
+        Issue issue = issuable.newIssueBuilder()
+          .ruleKey(rule.ruleKey())
+          .effortToFix(conditionsToCoverToReachThreshold)
+          .message((int) conditionsToCoverToReachThreshold
+            + " more branches need to be covered by unit tests to reach the minimum threshold of " + minimumBranchCoverageRatio
+            + "% branch coverage.")
+          .build();
+        issuable.addIssue(issue);
+      }
     }
-  }
-
-  @SuppressWarnings("rawtypes")
-  private Violation createViolation(Resource resource, org.sonar.api.rules.Rule rule, double conditionsToCoverToReachThreshold) {
-    Violation violation = Violation.create(rule, resource).setCost(conditionsToCoverToReachThreshold);
-    violation.setMessage((int) conditionsToCoverToReachThreshold
-      + " more branches need to be covered by unit tests to reach the minimum threshold of " + minimumBranchCoverageRatio
-      + "% branch coverage.");
-    return violation;
   }
 
   public void setMinimumBranchCoverageRatio(int threshold) {

@@ -19,21 +19,20 @@
  */
 package org.sonar.commonrules.api;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Collections2;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.sonar.api.rules.Rule;
+import org.sonar.api.server.rule.RuleDefinitions;
 import org.sonar.commonrules.internal.CommonRulesConstants;
 import org.sonar.commonrules.internal.CommonRulesRepository;
+import org.sonar.commonrules.internal.checks.CommentDensityCheck;
 
 import java.util.List;
 
 import static org.fest.assertions.Assertions.assertThat;
 
 public final class CommonRulesEngineTest {
-
-  @org.junit.Rule
-  public ExpectedException thrown = ExpectedException.none();
 
   private CommonRulesEngine engine;
 
@@ -48,34 +47,35 @@ public final class CommonRulesEngineTest {
     assertThat(extensions.size()).isEqualTo(2);
 
     CommonRulesRepository commonRulesRepository = (CommonRulesRepository) extensions.get(0);
-    assertThat(commonRulesRepository.createRules().size()).isEqualTo(0);
+    RuleDefinitions.Context context = new RuleDefinitions.Context();
+    commonRulesRepository.define(context);
+    assertThat(context.repository("common-fake")).isNotNull();
+    assertThat(context.repository("common-fake").rules()).hasSize(0);
   }
 
   @Test
   public void shouldReturnActivatedRules() throws Exception {
-    engine.activateRule("InsufficientCommentDensity").withParameter("minimumCommentDensity", "80");
-    List<Rule> declaredRules = engine.getDeclaredRules();
+    engine.activateCommentDensityCheck().withParameter("minimumCommentDensity", "80");
+    List<CommonRule> declaredRules = engine.getDeclaredCheck();
     assertThat(declaredRules.size()).isEqualTo(1);
-    Rule rule = declaredRules.get(0);
-    assertThat(rule.getKey()).isEqualTo("InsufficientCommentDensity");
-    assertThat(rule.getRepositoryKey()).isEqualTo(CommonRulesConstants.REPO_KEY_PREFIX + "fake");
-    assertThat(rule.getParam("minimumCommentDensity").getDefaultValue()).isEqualTo("80");
+    CommonRule rule = declaredRules.get(0);
+    assertThat(rule.getCheckClass()).isEqualTo(CommentDensityCheck.class);
+    assertThat(rule.getOverridenDefaultParams().get("minimumCommentDensity")).isEqualTo("80");
   }
 
   @Test
-  public void shouldFailIfUnknowRule() throws Exception {
-    thrown.expect(IllegalStateException.class);
-    thrown.expectMessage("Sonar common rule 'Foo' does not exist.");
-
-    engine.activateRule("Foo");
-  }
-
-  @Test
-  public void shouldFailIfUnknowRuleParameter() throws Exception {
-    thrown.expect(IllegalStateException.class);
-    thrown.expectMessage("Parameter 'foo' on rule 'InsufficientCommentDensity' does not exist.");
-
-    engine.activateRule("InsufficientCommentDensity").withParameter("foo", "80");
+  public void shouldEnableAllCheck() throws Exception {
+    engine.activateCommentDensityCheck();
+    engine.activateBranchCoverageCheck();
+    engine.activateDuplicatedBlocksCheck();
+    engine.activateFailedUnitTestsCheck();
+    engine.activateLineCoverageCheck();
+    engine.activateSkippedUnitTestsCheck();
+    assertThat(Collections2.transform(engine.getDeclaredCheck(), new Function<CommonRule, Class>() {
+      public Class apply(CommonRule input) {
+        return input.getCheckClass();
+      }
+    })).containsOnly(CommonRulesConstants.CLASSES.toArray());
   }
 
 }

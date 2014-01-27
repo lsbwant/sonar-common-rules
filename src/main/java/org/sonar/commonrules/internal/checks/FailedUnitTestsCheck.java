@@ -20,11 +20,14 @@
 package org.sonar.commonrules.internal.checks;
 
 import org.sonar.api.batch.DecoratorContext;
+import org.sonar.api.batch.rule.ModuleRule;
+import org.sonar.api.component.ResourcePerspectives;
+import org.sonar.api.issue.Issuable;
+import org.sonar.api.issue.Issue;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.measures.MeasureUtils;
 import org.sonar.api.resources.Resource;
 import org.sonar.api.resources.ResourceUtils;
-import org.sonar.api.rules.Violation;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 
@@ -36,16 +39,21 @@ import org.sonar.check.Rule;
     "Those tests should be handled as soon as possible to reduce the cost to fix the corresponding regressions.</p>")
 public class FailedUnitTestsCheck extends CommonCheck {
 
-  @SuppressWarnings("rawtypes")
   @Override
-  public void checkResource(Resource resource, DecoratorContext context, org.sonar.api.rules.Rule rule) {
+  public void checkResource(Resource resource, DecoratorContext context, ResourcePerspectives perspectives, ModuleRule rule) {
     double testErrors = MeasureUtils.getValue(context.getMeasure(CoreMetrics.TEST_ERRORS), 0.0);
     double testFailures = MeasureUtils.getValue(context.getMeasure(CoreMetrics.TEST_FAILURES), 0.0);
     double testFailuresAndErrors = testErrors + testFailures;
     if (ResourceUtils.isUnitTestClass(resource) && testFailuresAndErrors > 0) {
-      Violation violation = Violation.create(rule, resource).setCost(testFailuresAndErrors);
-      violation.setMessage("Some tests are not successful. You should fix them.");
-      context.saveViolation(violation);
+      Issuable issuable = perspectives.as(Issuable.class, resource);
+      if (issuable != null) {
+        Issue issue = issuable.newIssueBuilder()
+          .ruleKey(rule.ruleKey())
+          .effortToFix(testFailuresAndErrors)
+          .message("Some tests are not successful. You should fix them.")
+          .build();
+        issuable.addIssue(issue);
+      }
     }
   }
 

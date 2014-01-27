@@ -19,24 +19,36 @@
  */
 package org.sonar.commonrules.internal;
 
-import org.sonar.api.rules.Rule;
-import org.sonar.api.rules.RuleRepository;
+import org.sonar.api.server.rule.RuleDefinitions;
+import org.sonar.commonrules.api.CommonRule;
 
 import java.util.List;
+import java.util.Map;
 
-public class CommonRulesRepository extends RuleRepository {
+public class CommonRulesRepository implements RuleDefinitions {
 
-  private List<Rule> rules;
+  private List<CommonRule> rules;
+  private String languageKey;
 
-  public CommonRulesRepository(String languageKey, List<Rule> rules) {
-    super(CommonRulesConstants.REPO_KEY_PREFIX + languageKey, languageKey);
-    setName("Common Sonar");
+  public CommonRulesRepository(String languageKey, List<CommonRule> rules) {
+    this.languageKey = languageKey;
     this.rules = rules;
   }
 
-  @Override
-  public List<Rule> createRules() {
-    return rules;
+  public void define(Context context) {
+    NewRepository repo = context.newRepository(CommonRulesConstants.REPO_KEY_PREFIX + languageKey, languageKey)
+      .setName("Common SonarQube");
+    for (CommonRule commonRule : rules) {
+      NewRule newRule = repo.loadAnnotatedClass(commonRule.getCheckClass());
+      for (Map.Entry<String, String> overridenParam : commonRule.getOverridenDefaultParams().entrySet()) {
+        NewParam param = newRule.param(overridenParam.getKey());
+        if (param == null) {
+          throw new IllegalStateException("Parameter '" + overridenParam.getKey() + "' on rule '" + newRule.key() + "' does not exist.");
+        }
+        param.setDefaultValue(overridenParam.getValue());
+      }
+    }
+    repo.done();
   }
 
 }

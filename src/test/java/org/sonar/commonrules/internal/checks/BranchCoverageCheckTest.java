@@ -22,14 +22,20 @@ package org.sonar.commonrules.internal.checks;
 import org.junit.Before;
 import org.junit.Test;
 import org.sonar.api.batch.DecoratorContext;
+import org.sonar.api.batch.rule.ModuleRule;
+import org.sonar.api.component.ResourcePerspectives;
+import org.sonar.api.issue.Issuable;
+import org.sonar.api.issue.Issuable.IssueBuilder;
+import org.sonar.api.issue.Issue;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.measures.Measure;
 import org.sonar.api.resources.Resource;
 import org.sonar.api.resources.Scopes;
-import org.sonar.api.rules.Violation;
+import org.sonar.api.rule.RuleKey;
 
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.argThat;
+import static org.mockito.Matchers.anyDouble;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -40,45 +46,58 @@ public class BranchCoverageCheckTest {
   private BranchCoverageCheck check;
   private Resource resource;
   private DecoratorContext context;
+  private ResourcePerspectives perspectives;
+  private Issuable issuable;
+  private ModuleRule rule;
+  private IssueBuilder issueBuilder;
 
   @Before
   public void before() {
     check = new BranchCoverageCheck();
     resource = mock(Resource.class);
     context = mock(DecoratorContext.class);
+    perspectives = mock(ResourcePerspectives.class);
+    issuable = mock(Issuable.class);
+    issueBuilder = mock(Issuable.IssueBuilder.class);
+    when(issueBuilder.ruleKey(any(RuleKey.class))).thenReturn(issueBuilder);
+    when(issueBuilder.effortToFix(anyDouble())).thenReturn(issueBuilder);
+    when(issueBuilder.message(anyString())).thenReturn(issueBuilder);
+    when(issuable.newIssueBuilder()).thenReturn(issueBuilder);
+    when(perspectives.as(Issuable.class, resource)).thenReturn(issuable);
+    rule = mock(ModuleRule.class);
   }
 
   @Test
-  public void checkShouldNotGenerateViolationOnFileWithGoodLineCoverage() {
+  public void checkShouldNotGenerateIssueOnFileWithGoodLineCoverage() {
     when(resource.getScope()).thenReturn(Scopes.FILE);
     when(context.getMeasure(CoreMetrics.BRANCH_COVERAGE)).thenReturn(new Measure(CoreMetrics.BRANCH_COVERAGE, 85.0));
 
-    check.checkResource(resource, context, null);
+    check.checkResource(resource, context, perspectives, rule);
 
-    verify(context, times(0)).saveViolation(any(Violation.class));
+    verify(issuable, times(0)).addIssue(any(Issue.class));
   }
 
   @Test
-  public void checkShouldNotGenerateViolationOnFileWithoutLineCoverage() {
-    when(resource.getScope()).thenReturn(Resource.SCOPE_ENTITY);
+  public void checkShouldNotGenerateIssueOnFileWithoutLineCoverage() {
+    when(resource.getScope()).thenReturn(Scopes.FILE);
     when(context.getMeasure(CoreMetrics.BRANCH_COVERAGE)).thenReturn(null);
 
-    check.checkResource(resource, context, null);
+    check.checkResource(resource, context, perspectives, rule);
 
-    verify(context, times(0)).saveViolation(any(Violation.class));
+    verify(issuable, times(0)).addIssue(any(Issue.class));
   }
 
   @Test
-  public void checkShoulGenerateViolationOnFileWithBadLineCoverage() {
+  public void checkShoulGenerateIssueOnFileWithBadLineCoverage() {
     check.setMinimumBranchCoverageRatio(60);
-    when(resource.getScope()).thenReturn(Resource.SCOPE_ENTITY);
+    when(resource.getScope()).thenReturn(Scopes.FILE);
     when(context.getMeasure(CoreMetrics.BRANCH_COVERAGE)).thenReturn(new Measure(CoreMetrics.BRANCH_COVERAGE, 20.0));
     when(context.getMeasure(CoreMetrics.CONDITIONS_TO_COVER)).thenReturn(new Measure(CoreMetrics.CONDITIONS_TO_COVER, 99.9));
     when(context.getMeasure(CoreMetrics.UNCOVERED_CONDITIONS)).thenReturn(new Measure(CoreMetrics.UNCOVERED_CONDITIONS, 80.0));
 
-    check.checkResource(resource, context, null);
+    check.checkResource(resource, context, perspectives, rule);
 
-    verify(context, times(1)).saveViolation(argThat(new ViolationCostMatcher(41)));
+    verify(issueBuilder, times(1)).effortToFix(41D);
   }
 
 }

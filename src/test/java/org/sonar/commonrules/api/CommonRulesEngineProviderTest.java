@@ -20,50 +20,23 @@
 package org.sonar.commonrules.api;
 
 import org.junit.Test;
-import org.sonar.api.resources.Project;
 
 import static org.fest.assertions.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public final class CommonRulesEngineProviderTest {
 
   @Test
-  public void shouldProvideExtensionsOnServerSide() throws Exception {
+  public void shouldProvideExtensions() throws Exception {
     FakeCommonRulesEngineProvider provider = new FakeCommonRulesEngineProvider();
     assertThat(provider.provide().size()).isEqualTo(2);
   }
 
-  @Test
-  public void shouldProvideExtensionsOnBatchSideIfGoodLanguage() throws Exception {
-    Project project = mock(Project.class);
-    when(project.getLanguageKey()).thenReturn("fake");
-    FakeCommonRulesEngineProvider provider = new FakeCommonRulesEngineProvider(project);
-    assertThat(provider.provide().size()).isEqualTo(2);
-  }
-
-  @Test
-  public void shouldNotProvideExtensionsOnBatchSideIfNotGoodLanguage() throws Exception {
-    Project project = mock(Project.class);
-    when(project.getLanguageKey()).thenReturn("java");
-    FakeCommonRulesEngineProvider provider = new FakeCommonRulesEngineProvider(project);
-    assertThat(provider.provide().size()).isEqualTo(0);
-  }
-
   public class FakeCommonRulesEngineProvider extends CommonRulesEngineProvider {
-
-    public FakeCommonRulesEngineProvider() {
-      super();
-    }
-
-    public FakeCommonRulesEngineProvider(Project project) {
-      super(project);
-    }
 
     @Override
     protected void doActivation(CommonRulesEngine engine) {
-      engine.activateRule("InsufficientBranchCoverage");
-      engine.activateRule("InsufficientCommentDensity");
+      engine.activateBranchCoverageCheck();
+      engine.activateCommentDensityCheck();
     }
 
     @Override
