@@ -1,5 +1,5 @@
 /*
- * Sonar Common Rules
+ * SonarQube Common Rules
  * Copyright (C) 2012 SonarSource
  * dev@sonar.codehaus.org
  *
@@ -68,7 +68,7 @@ public final class CommonChecksDecoratorTest {
 
   @Test
   public void testToString() throws Exception {
-    assertThat(decorator.toString()).isEqualTo("Sonar common rules engine");
+    assertThat(decorator.toString()).isEqualTo("SonarQube Common Rules engine");
   }
 
   @Test

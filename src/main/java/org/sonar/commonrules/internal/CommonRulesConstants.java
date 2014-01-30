@@ -1,5 +1,5 @@
 /*
- * Sonar Common Rules
+ * SonarQube Common Rules
  * Copyright (C) 2012 SonarSource
  * dev@sonar.codehaus.org
  *

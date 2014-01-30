@@ -1,4 +1,4 @@
-Sonar Common Rules
+SonarQube Common Rules
 =========================
 
 This library provides common Sonar rules that can be embeded by any language plugin.

@@ -5,15 +5,15 @@
   <parent>
     <groupId>org.codehaus.sonar-plugins</groupId>
     <artifactId>parent</artifactId>
-    <version>16</version>
+    <version>18</version>
   </parent>
 
   <groupId>org.codehaus.sonar.common-rules</groupId>
   <artifactId>sonar-common-rules</artifactId>
   <version>1.2-SNAPSHOT</version>
 
-  <name>Sonar Common Rules</name>
-  <description>This library provides common Sonar rules that can be embeded by any language plugin.</description>
+  <name>SonarQube Common Rules</name>
+  <description>This library provides common SonarQube rules that can be embedded by any language plugin</description>
   <url />
   <inceptionYear>2012</inceptionYear>
   <organization>
@@ -36,7 +36,7 @@
   </scm>
   <issueManagement>
     <system>Jira</system>
-    <url>http://jira.sonarsource.com/browse/XXXX</url>
+    <url>http://jira.codehaus.org/browse/SONARPLUGINS/component/15581</url>
   </issueManagement>
   <ciManagement>
     <system>Cloudbees</system>
@@ -63,12 +63,12 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>1.5.6</version>
+      <version>1.6.2</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>jcl-over-slf4j</artifactId>
-      <version>1.5.6</version>
+      <version>1.6.2</version>
     </dependency>
     
     <!-- TESTS -->
@@ -81,7 +81,7 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>0.9.15</version>
+      <version>0.9.30</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -93,7 +93,7 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-all</artifactId>
-      <version>1.8.5</version>
+      <version>1.9.5</version>
       <scope>test</scope>
     </dependency>
     <dependency>

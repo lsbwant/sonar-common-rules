@@ -1,5 +1,5 @@
 /*
- * Sonar Common Rules
+ * SonarQube Common Rules
  * Copyright (C) 2012 SonarSource
  * dev@sonar.codehaus.org
  *
@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Sonar Common Rules Engine on which rules can be activated.
+ * SonarQube Common Rules Engine on which rules can be activated.
  */
 public class CommonRulesEngine {
 

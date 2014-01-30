@@ -1,5 +1,5 @@
 /*
- * Sonar Common Rules
+ * SonarQube Common Rules
  * Copyright (C) 2012 SonarSource
  * dev@sonar.codehaus.org
  *
@@ -67,6 +67,6 @@ public class CommonChecksDecorator implements Decorator {
 
   @Override
   public String toString() {
-    return "Sonar common rules engine";
+    return "SonarQube Common Rules engine";
   }
 }
