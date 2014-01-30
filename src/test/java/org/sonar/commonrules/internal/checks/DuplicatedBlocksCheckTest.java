@@ -19,7 +19,6 @@
  */
 package org.sonar.commonrules.internal.checks;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.sonar.api.batch.DecoratorContext;
 import org.sonar.api.measures.CoreMetrics;
@@ -29,23 +28,14 @@ import org.sonar.api.rules.Violation;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class DuplicatedBlocksCheckTest {
 
-  private DuplicatedBlocksCheck check;
-  private Resource resource;
-  private DecoratorContext context;
+  DuplicatedBlocksCheck check = new DuplicatedBlocksCheck();
+  Resource resource = mock(Resource.class);
+  DecoratorContext context = mock(DecoratorContext.class);
 
-  @Before
-  public void before() {
-    check = new DuplicatedBlocksCheck();
-    resource = mock(Resource.class);
-    context = mock(DecoratorContext.class);
-  }
 
   @Test
   public void checkShouldGenerateViolationOnFileWithDuplicatedBlocks() {
@@ -61,16 +51,6 @@ public class DuplicatedBlocksCheckTest {
   public void checkShouldNotGenerateViolationOnFileWithoutDuplicatedBlocks() {
     when(resource.getScope()).thenReturn(Resource.SCOPE_ENTITY);
     when(context.getMeasure(CoreMetrics.DUPLICATED_BLOCKS)).thenReturn(new Measure(CoreMetrics.DUPLICATED_BLOCKS, 0.0));
-
-    check.checkResource(resource, context, null);
-
-    verify(context, times(0)).saveViolation(any(Violation.class));
-  }
-
-  @Test
-  public void checkShouldNotGenerateViolationOnPackageWithDuplicatedBlocks() {
-    when(resource.getScope()).thenReturn(Resource.SCOPE_SPACE);
-    when(context.getMeasure(CoreMetrics.DUPLICATED_BLOCKS)).thenReturn(new Measure(CoreMetrics.DUPLICATED_BLOCKS, 4.0));
 
     check.checkResource(resource, context, null);
 

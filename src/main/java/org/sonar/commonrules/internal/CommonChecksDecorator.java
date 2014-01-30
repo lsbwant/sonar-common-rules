@@ -19,54 +19,69 @@
  */
 package org.sonar.commonrules.internal;
 
-import org.sonar.api.batch.Decorator;
-import org.sonar.api.batch.DecoratorBarriers;
-import org.sonar.api.batch.DecoratorContext;
-import org.sonar.api.batch.DependedUpon;
-import org.sonar.api.batch.DependsUpon;
+import org.sonar.api.batch.*;
 import org.sonar.api.checks.AnnotationCheckFactory;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.measures.Metric;
 import org.sonar.api.profiles.RulesProfile;
 import org.sonar.api.resources.Project;
+import org.sonar.api.resources.ProjectFileSystem;
 import org.sonar.api.resources.Resource;
+import org.sonar.api.resources.ResourceUtils;
 import org.sonar.commonrules.internal.checks.CommonCheck;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 @DependsUpon(DecoratorBarriers.START_VIOLATIONS_GENERATION)
 @DependedUpon(DecoratorBarriers.END_OF_VIOLATIONS_GENERATION)
-public class CommonChecksDecorator implements Decorator {
+public abstract class CommonChecksDecorator implements Decorator {
 
-  private Collection<CommonCheck> activeChecks;
-  private final AnnotationCheckFactory checkFactory;
+  private final ProjectFileSystem fs;
+  private final String language;
+  private final RulesProfile qProfile;
+  private AnnotationCheckFactory checkFactory;
+  private Collection<CommonCheck> activeChecks = Collections.emptyList();
+
+  public CommonChecksDecorator(ProjectFileSystem fs, RulesProfile qProfile, String language) {
+    this.fs = fs;
+    this.qProfile = qProfile;
+    this.language = language;
+  }
+
+  public String language() {
+    return language;
+  }
 
   @DependsUpon
   public List<Metric> dependsUponMetrics() {
     return Arrays.asList(CoreMetrics.LINE_COVERAGE, CoreMetrics.COMMENT_LINES_DENSITY);
   }
 
-  @SuppressWarnings("unchecked")
-  public CommonChecksDecorator(RulesProfile profile) {
-    checkFactory = AnnotationCheckFactory.create(profile, CommonRulesConstants.REPO_KEY_PREFIX + profile.getLanguage(), CommonRulesConstants.CLASSES);
-    activeChecks = checkFactory.getChecks();
-  }
-
+  @Override
   public boolean shouldExecuteOnProject(Project project) {
+    boolean hasLangFiles = !fs.mainFiles(language).isEmpty() || !fs.testFiles(language).isEmpty();
+    if (hasLangFiles) {
+      checkFactory = AnnotationCheckFactory.create(qProfile, DefaultCommonRulesRepository.keyForLanguage(language), CommonRulesConstants.CLASSES);
+      activeChecks = checkFactory.getChecks();
+    }
     return !activeChecks.isEmpty();
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})
   public void decorate(Resource resource, DecoratorContext context) {
-    for (CommonCheck check : activeChecks) {
-      check.checkResource(resource, context, checkFactory.getActiveRule(check).getRule());
+    // assume that all checks relate to files, not directories nor modules
+    if (ResourceUtils.isEntity(resource) && resource.getLanguage() != null && resource.getLanguage().getKey().equals(language)) {
+      for (CommonCheck check : activeChecks) {
+        check.checkResource(resource, context, checkFactory.getActiveRule(check).getRule());
+      }
     }
   }
 
   @Override
   public String toString() {
-    return "SonarQube Common Rules engine";
+    return "SonarQube Common Rules for " + language;
   }
 }

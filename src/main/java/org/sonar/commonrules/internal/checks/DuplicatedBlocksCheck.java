@@ -23,7 +23,6 @@ import org.sonar.api.batch.DecoratorContext;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.measures.MeasureUtils;
 import org.sonar.api.resources.Resource;
-import org.sonar.api.resources.ResourceUtils;
 import org.sonar.api.rules.Violation;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
@@ -40,7 +39,7 @@ public class DuplicatedBlocksCheck extends CommonCheck {
   @Override
   public void checkResource(Resource resource, DecoratorContext context, org.sonar.api.rules.Rule rule) {
     double duplicatedBlocks = MeasureUtils.getValue(context.getMeasure(CoreMetrics.DUPLICATED_BLOCKS), 0.0);
-    if (ResourceUtils.isEntity(resource) && duplicatedBlocks > 0) {
+    if (duplicatedBlocks > 0) {
       Violation violation = createViolation(resource, rule, duplicatedBlocks);
       context.saveViolation(violation);
     }

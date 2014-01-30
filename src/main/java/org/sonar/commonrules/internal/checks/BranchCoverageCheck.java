@@ -23,14 +23,14 @@ import org.sonar.api.batch.DecoratorContext;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.measures.MeasureUtils;
 import org.sonar.api.resources.Resource;
-import org.sonar.api.resources.ResourceUtils;
 import org.sonar.api.rules.Violation;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.check.RuleProperty;
+import org.sonar.commonrules.api.CommonRulesRepository;
 
 @Rule(
-  key = "InsufficientBranchCoverage",
+  key = CommonRulesRepository.RULE_INSUFFICIENT_BRANCH_COVERAGE,
   name = "Insufficient branch coverage by unit tests",
   priority = Priority.MAJOR,
   description = "<p>An issue is created on a file as soon as the branch coverage on this file is less than the required threshold."
@@ -39,15 +39,14 @@ public class BranchCoverageCheck extends CommonCheck {
 
   private static final double DEFAULT_RATIO = 65;
 
-  @RuleProperty(description = "The minimum required branch coverage ratio.", defaultValue = "" + DEFAULT_RATIO)
+  @RuleProperty(key = CommonRulesRepository.PARAM_MIN_BRANCH_COVERAGE, description = "The minimum required branch coverage ratio.", defaultValue = "" + DEFAULT_RATIO)
   private double minimumBranchCoverageRatio = DEFAULT_RATIO;
 
   @SuppressWarnings("rawtypes")
   @Override
   public void checkResource(Resource resource, DecoratorContext context, org.sonar.api.rules.Rule rule) {
     double lineCoverage = MeasureUtils.getValue(context.getMeasure(CoreMetrics.BRANCH_COVERAGE), 0.0);
-    if (ResourceUtils.isEntity(resource) && context.getMeasure(CoreMetrics.BRANCH_COVERAGE) != null
-      && lineCoverage < minimumBranchCoverageRatio) {
+    if (context.getMeasure(CoreMetrics.BRANCH_COVERAGE) != null && lineCoverage < minimumBranchCoverageRatio) {
       double uncoveredConditions = MeasureUtils.getValue(context.getMeasure(CoreMetrics.UNCOVERED_CONDITIONS), 0.0);
       double conditionsToCover = MeasureUtils.getValue(context.getMeasure(CoreMetrics.CONDITIONS_TO_COVER), 0.0);
       double conditionsToCoverToReachThreshold = Math.ceil((conditionsToCover * minimumBranchCoverageRatio / 100)

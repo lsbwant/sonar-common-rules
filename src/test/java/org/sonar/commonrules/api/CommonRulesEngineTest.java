@@ -19,63 +19,84 @@
  */
 package org.sonar.commonrules.api;
 
-import org.junit.Before;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.picocontainer.Characteristics;
+import org.picocontainer.containers.TransientPicoContainer;
+import org.sonar.api.profiles.RulesProfile;
+import org.sonar.api.resources.ProjectFileSystem;
 import org.sonar.api.rules.Rule;
-import org.sonar.commonrules.internal.CommonRulesConstants;
-import org.sonar.commonrules.internal.CommonRulesRepository;
 
 import java.util.List;
 
 import static org.fest.assertions.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 public final class CommonRulesEngineTest {
 
-  @org.junit.Rule
-  public ExpectedException thrown = ExpectedException.none();
+  static class JavaCommonRulesEngine extends CommonRulesEngine {
+    public JavaCommonRulesEngine() {
+      super("java");
+    }
 
-  private CommonRulesEngine engine;
+    @Override
+    protected void doEnableRules(CommonRulesRepository repository) {
+      repository.enableDuplicatedBlocksRule();
 
-  @Before
-  public void init() throws Exception {
-    engine = new CommonRulesEngine("fake");
+      // default value
+      repository.enableInsufficientBranchCoverageRule(null);
+
+      // override default value
+      repository.enableInsufficientLineCoverageRule(82.0);
+    }
+  }
+
+
+  @Test
+  public void enable_rules() throws Exception {
+    JavaCommonRulesEngine engine = new JavaCommonRulesEngine();
+    CommonRulesRepository repo = engine.newRepository();
+
+    assertThat(repo.rules()).hasSize(3);
+    assertThat(repo.rule(CommonRulesRepository.RULE_DUPLICATED_BLOCKS)).isNotNull();
+    assertThat(repo.rule(CommonRulesRepository.RULE_INSUFFICIENT_COMMENT_DENSITY)).isNull();
+
+    // hardcoded default value
+    Rule branchCoverage = repo.rule(CommonRulesRepository.RULE_INSUFFICIENT_BRANCH_COVERAGE);
+    assertThat(branchCoverage).isNotNull();
+    assertThat(Double.parseDouble(branchCoverage.getParam(CommonRulesRepository.PARAM_MIN_BRANCH_COVERAGE).getDefaultValue())).isEqualTo(65.0);
+
+    Rule lineCoverage = repo.rule(CommonRulesRepository.RULE_INSUFFICIENT_LINE_COVERAGE);
+    assertThat(lineCoverage).isNotNull();
+    assertThat(Double.parseDouble(lineCoverage.getParam(CommonRulesRepository.PARAM_MIN_LINE_COVERAGE).getDefaultValue())).isEqualTo(82.0);
   }
 
   @Test
-  public void shouldReturnTwoExtensionsWithNoCheckByDefault() throws Exception {
-    List<?> extensions = engine.getExtensions();
-    assertThat(extensions.size()).isEqualTo(2);
+  public void provide_batch_decorator() throws Exception {
+    JavaCommonRulesEngine engine = new JavaCommonRulesEngine();
+    List extensions = engine.provide();
 
-    CommonRulesRepository commonRulesRepository = (CommonRulesRepository) extensions.get(0);
-    assertThat(commonRulesRepository.createRules().size()).isEqualTo(0);
+    assertThat(extensions).hasSize(2).contains(CommonRulesEngine.LanguageDecorator.class);
+
+    TransientPicoContainer pico = new TransientPicoContainer();
+    pico.as(Characteristics.CACHE).addComponent(engine);
+    pico.as(Characteristics.CACHE).addComponent(mock(ProjectFileSystem.class));
+    pico.as(Characteristics.CACHE).addComponent(mock(RulesProfile.class));
+    for (Object extension : extensions) {
+      pico.as(Characteristics.CACHE).addComponent(extension);
+    }
+
+    CommonRulesEngine.LanguageDecorator decorator = pico.getComponent(CommonRulesEngine.LanguageDecorator.class);
+    assertThat(decorator.language()).isEqualTo("java");
   }
 
   @Test
-  public void shouldReturnActivatedRules() throws Exception {
-    engine.activateRule("InsufficientCommentDensity").withParameter("minimumCommentDensity", "80");
-    List<Rule> declaredRules = engine.getDeclaredRules();
-    assertThat(declaredRules.size()).isEqualTo(1);
-    Rule rule = declaredRules.get(0);
-    assertThat(rule.getKey()).isEqualTo("InsufficientCommentDensity");
-    assertThat(rule.getRepositoryKey()).isEqualTo(CommonRulesConstants.REPO_KEY_PREFIX + "fake");
-    assertThat(rule.getParam("minimumCommentDensity").getDefaultValue()).isEqualTo("80");
-  }
+  public void provide_rule_definitions() throws Exception {
+    JavaCommonRulesEngine engine = new JavaCommonRulesEngine();
+    List extensions = engine.provide();
 
-  @Test
-  public void shouldFailIfUnknowRule() throws Exception {
-    thrown.expect(IllegalStateException.class);
-    thrown.expectMessage("Sonar common rule 'Foo' does not exist.");
-
-    engine.activateRule("Foo");
-  }
-
-  @Test
-  public void shouldFailIfUnknowRuleParameter() throws Exception {
-    thrown.expect(IllegalStateException.class);
-    thrown.expectMessage("Parameter 'foo' on rule 'InsufficientCommentDensity' does not exist.");
-
-    engine.activateRule("InsufficientCommentDensity").withParameter("foo", "80");
+    assertThat(extensions.get(1)).isInstanceOf(CommonRulesRepository.class);
+    CommonRulesRepository repo = (CommonRulesRepository) extensions.get(1);
+    assertThat(repo.rules()).hasSize(3);
   }
 
 }

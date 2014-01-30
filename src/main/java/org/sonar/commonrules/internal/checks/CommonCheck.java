@@ -20,6 +20,7 @@
 package org.sonar.commonrules.internal.checks;
 
 import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
 import org.sonar.api.batch.DecoratorContext;
 import org.sonar.api.resources.Resource;
 import org.sonar.api.rules.Rule;
@@ -31,7 +32,7 @@ public abstract class CommonCheck {
 
   @Override
   public String toString() {
-    return ToStringBuilder.reflectionToString(this);
+    return ToStringBuilder.reflectionToString(this, ToStringStyle.SHORT_PREFIX_STYLE);
   }
 
 }

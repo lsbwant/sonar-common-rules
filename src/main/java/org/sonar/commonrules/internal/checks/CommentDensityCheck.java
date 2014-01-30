@@ -23,7 +23,6 @@ import org.sonar.api.batch.DecoratorContext;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.measures.MeasureUtils;
 import org.sonar.api.resources.Resource;
-import org.sonar.api.resources.ResourceUtils;
 import org.sonar.api.rules.Violation;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
@@ -39,7 +38,7 @@ public class CommentDensityCheck extends CommonCheck {
 
   private static final double DEFAULT_MIN_DENSITY = 25;
 
-  @RuleProperty(description = "The minimum required comment density.", defaultValue = "" + DEFAULT_MIN_DENSITY)
+  @RuleProperty(key ="minimumCommentDensity", description = "The minimum required comment density.", defaultValue = "" + DEFAULT_MIN_DENSITY)
   private double minimumCommentDensity = DEFAULT_MIN_DENSITY;
 
   @SuppressWarnings("rawtypes")
@@ -52,7 +51,7 @@ public class CommentDensityCheck extends CommonCheck {
 
     double commentDensity = MeasureUtils.getValue(context.getMeasure(CoreMetrics.COMMENT_LINES_DENSITY), 0.0);
     double linesOfCode = MeasureUtils.getValue(context.getMeasure(CoreMetrics.NCLOC), 0.0);
-    if (ResourceUtils.isEntity(resource) && commentDensity < minimumCommentDensity && linesOfCode != 0) {
+    if (commentDensity < minimumCommentDensity && linesOfCode != 0) {
       double commentLines = MeasureUtils.getValue(context.getMeasure(CoreMetrics.COMMENT_LINES), 0.0);
       double missingCommentLines = Math.ceil(minimumCommentDensity * linesOfCode / (100 - minimumCommentDensity) - commentLines);
 

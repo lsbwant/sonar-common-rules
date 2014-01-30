@@ -19,7 +19,6 @@
  */
 package org.sonar.commonrules.internal.checks;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.sonar.api.batch.DecoratorContext;
 import org.sonar.api.measures.CoreMetrics;
@@ -28,25 +27,16 @@ import org.sonar.api.resources.Resource;
 import org.sonar.api.resources.Scopes;
 import org.sonar.api.rules.Violation;
 
+import static org.fest.assertions.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class BranchCoverageCheckTest {
 
-  private BranchCoverageCheck check;
-  private Resource resource;
-  private DecoratorContext context;
-
-  @Before
-  public void before() {
-    check = new BranchCoverageCheck();
-    resource = mock(Resource.class);
-    context = mock(DecoratorContext.class);
-  }
+  BranchCoverageCheck check = new BranchCoverageCheck();
+  Resource resource = mock(Resource.class);
+  DecoratorContext context = mock(DecoratorContext.class);
 
   @Test
   public void checkShouldNotGenerateViolationOnFileWithGoodLineCoverage() {
@@ -81,4 +71,9 @@ public class BranchCoverageCheckTest {
     verify(context, times(1)).saveViolation(argThat(new ViolationCostMatcher(41)));
   }
 
+  @Test
+  public void test_toString() {
+    assertThat(check.toString()).isEqualTo("BranchCoverageCheck[minimumBranchCoverageRatio=65.0]");
+
+  }
 }

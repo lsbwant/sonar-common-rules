@@ -19,40 +19,28 @@
  */
 package org.sonar.commonrules.internal;
 
-import org.sonar.commonrules.internal.checks.BranchCoverageCheck;
-import org.sonar.commonrules.internal.checks.CommentDensityCheck;
-import org.sonar.commonrules.internal.checks.DuplicatedBlocksCheck;
-import org.sonar.commonrules.internal.checks.FailedUnitTestsCheck;
-import org.sonar.commonrules.internal.checks.LineCoverageCheck;
-import org.sonar.commonrules.internal.checks.SkippedUnitTestsCheck;
+import org.sonar.commonrules.internal.checks.*;
 
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Constants used in the Common Rules lib.
- */
-public final class CommonRulesConstants {
-
-  private CommonRulesConstants() {
-  }
+public interface CommonRulesConstants {
 
   /**
    * The prefix used to create the rule repository for a given language (using its key).
    * For instance : "common-java".
    */
-  public static final String REPO_KEY_PREFIX = "common-";
+  String REPO_KEY_PREFIX = "common-";
 
   /**
    * List of existing checks.
    */
-  @SuppressWarnings("rawtypes")
-  public static final List<Class> CLASSES = Arrays.<Class> asList(
-      DuplicatedBlocksCheck.class,
-      LineCoverageCheck.class,
-      BranchCoverageCheck.class,
-      CommentDensityCheck.class,
-      SkippedUnitTestsCheck.class,
-      FailedUnitTestsCheck.class);
+  List<Class> CLASSES = Arrays.<Class>asList(
+    DuplicatedBlocksCheck.class,
+    LineCoverageCheck.class,
+    BranchCoverageCheck.class,
+    CommentDensityCheck.class,
+    SkippedUnitTestsCheck.class,
+    FailedUnitTestsCheck.class);
 
 }

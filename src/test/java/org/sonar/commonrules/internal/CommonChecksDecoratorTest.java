@@ -19,56 +19,45 @@
  */
 package org.sonar.commonrules.internal;
 
+import com.google.common.collect.Lists;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.sonar.api.batch.DecoratorContext;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.measures.Measure;
 import org.sonar.api.measures.Metric;
 import org.sonar.api.profiles.RulesProfile;
-import org.sonar.api.resources.Resource;
+import org.sonar.api.resources.*;
 import org.sonar.api.rules.Rule;
 import org.sonar.api.rules.RulePriority;
+import org.sonar.commonrules.api.CommonRulesRepository;
 import org.sonar.commonrules.internal.checks.ViolationCostMatcher;
 
 import java.util.List;
 
 import static org.fest.assertions.Assertions.assertThat;
 import static org.mockito.Matchers.argThat;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public final class CommonChecksDecoratorTest {
 
-  private static final String REPO_KEY = CommonRulesConstants.REPO_KEY_PREFIX + "fake";
+  private static final String REPO_KEY = CommonRulesConstants.REPO_KEY_PREFIX + "java";
 
-  @Mock
-  Resource resource;
-
-  @Mock
-  DecoratorContext context;
-
+  Resource resource = mock(Resource.class);
+  DecoratorContext context = mock(DecoratorContext.class);
+  ProjectFileSystem fs = mock(ProjectFileSystem.class);
   CommonChecksDecorator decorator;
+  RulesProfile profile = RulesProfile.create("My SQALE profile", "java");
 
   @Before
   public void init() {
-    MockitoAnnotations.initMocks(this);
-
-    RulesProfile profile = RulesProfile.create("My SQALE profile", "fake");
-    Rule duplicatedBlocksRule = Rule.create(REPO_KEY, "DuplicatedBlocks", null);
-    profile.activateRule(duplicatedBlocksRule, RulePriority.MAJOR);
-    Rule lineCoverageRule = Rule.create(REPO_KEY, "InsufficientLineCoverage", null);
-    profile.activateRule(lineCoverageRule, RulePriority.MAJOR);
-
-    decorator = new CommonChecksDecorator(profile);
+    decorator = new CommonChecksDecorator(fs, profile, "java") {
+    };
   }
 
   @Test
   public void testToString() throws Exception {
-    assertThat(decorator.toString()).isEqualTo("SonarQube Common Rules engine");
+    assertThat(decorator.toString()).isEqualTo("SonarQube Common Rules for java");
   }
 
   @Test
@@ -79,24 +68,76 @@ public final class CommonChecksDecoratorTest {
   }
 
   @Test
-  public void shouldExecuteOnProject() {
-    assertThat(decorator.shouldExecuteOnProject(null)).isTrue();
-  }
-
-  @Test
-  public void shouldNotExecuteOnProject() {
-    decorator = new CommonChecksDecorator(RulesProfile.create("My SQALE profile", "fake"));
+  public void do_not_execute_if_no_source_files() {
     assertThat(decorator.shouldExecuteOnProject(null)).isFalse();
   }
 
   @Test
-  public void shouldCreateViolationOnDuplicatedBlocksRule() {
+  public void do_execute_if_source_files_and_active_rules() {
+    when(fs.mainFiles("java")).thenReturn(Lists.newArrayList(mock(InputFile.class)));
+    Rule duplicatedBlocksRule = Rule.create(REPO_KEY, CommonRulesRepository.RULE_DUPLICATED_BLOCKS, null);
+    profile.activateRule(duplicatedBlocksRule, RulePriority.MAJOR);
+    Rule lineCoverageRule = Rule.create(REPO_KEY, CommonRulesRepository.RULE_INSUFFICIENT_LINE_COVERAGE, null);
+    profile.activateRule(lineCoverageRule, RulePriority.MAJOR);
+
+    assertThat(decorator.shouldExecuteOnProject(null)).isTrue();
+  }
+
+  @Test
+  public void do_not_execute_if_no_active_rules() {
+    when(fs.mainFiles("java")).thenReturn(Lists.newArrayList(mock(InputFile.class)));
+    // Q profile is empty
+    assertThat(decorator.shouldExecuteOnProject(null)).isFalse();
+  }
+
+  @Test
+  public void create_violation() {
+    when(fs.mainFiles("java")).thenReturn(Lists.newArrayList(mock(InputFile.class)));
     when(resource.getScope()).thenReturn(Resource.SCOPE_ENTITY);
+    when(resource.getLanguage()).thenReturn(Java.INSTANCE);
     when(context.getMeasure(CoreMetrics.DUPLICATED_BLOCKS)).thenReturn(new Measure(CoreMetrics.DUPLICATED_BLOCKS, 2.0));
 
+    Rule duplicatedBlocksRule = Rule.create(REPO_KEY, CommonRulesRepository.RULE_DUPLICATED_BLOCKS, null);
+    profile.activateRule(duplicatedBlocksRule, RulePriority.MAJOR);
+
+    // ugly, this method initializes the decorator
+    decorator.shouldExecuteOnProject(null);
     decorator.decorate(resource, context);
 
     verify(context, times(1)).saveViolation(argThat(new ViolationCostMatcher(2)));
   }
 
+  @Test
+  public void do_not_decorate_other_languages() {
+    when(fs.mainFiles("java")).thenReturn(Lists.newArrayList(mock(InputFile.class)));
+    when(resource.getScope()).thenReturn(Resource.SCOPE_ENTITY);
+    when(resource.getLanguage()).thenReturn(new Php());
+    when(context.getMeasure(CoreMetrics.DUPLICATED_BLOCKS)).thenReturn(new Measure(CoreMetrics.DUPLICATED_BLOCKS, 2.0));
+
+    Rule duplicatedBlocksRule = Rule.create(REPO_KEY, CommonRulesRepository.RULE_DUPLICATED_BLOCKS, null);
+    profile.activateRule(duplicatedBlocksRule, RulePriority.MAJOR);
+
+    // ugly, this method initializes the decorator
+    decorator.shouldExecuteOnProject(null);
+    decorator.decorate(resource, context);
+
+    verifyZeroInteractions(context);
+  }
+
+  static class Php implements Language {
+    @Override
+    public String getKey() {
+      return "php";
+    }
+
+    @Override
+    public String getName() {
+      return "PHP";
+    }
+
+    @Override
+    public String[] getFileSuffixes() {
+      return new String[0];
+    }
+  }
 }

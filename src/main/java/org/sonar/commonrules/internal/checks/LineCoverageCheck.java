@@ -23,7 +23,6 @@ import org.sonar.api.batch.DecoratorContext;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.measures.MeasureUtils;
 import org.sonar.api.resources.Resource;
-import org.sonar.api.resources.ResourceUtils;
 import org.sonar.api.rules.Violation;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
@@ -39,15 +38,14 @@ public class LineCoverageCheck extends CommonCheck {
 
   private static final double DEFAULT_MIN_RATIO = 65;
 
-  @RuleProperty(description = "The minimum required line coverage ratio.", defaultValue = "" + DEFAULT_MIN_RATIO)
+  @RuleProperty(key = "minimumLineCoverageRatio", description = "The minimum required line coverage ratio.", defaultValue = "" + DEFAULT_MIN_RATIO)
   private double minimumLineCoverageRatio = DEFAULT_MIN_RATIO;
 
   @SuppressWarnings("rawtypes")
   @Override
   public void checkResource(Resource resource, DecoratorContext context, org.sonar.api.rules.Rule rule) {
     double lineCoverage = MeasureUtils.getValue(context.getMeasure(CoreMetrics.LINE_COVERAGE), 0.0);
-    if (ResourceUtils.isEntity(resource) && context.getMeasure(CoreMetrics.LINE_COVERAGE) != null
-      && lineCoverage < minimumLineCoverageRatio) {
+    if (context.getMeasure(CoreMetrics.LINE_COVERAGE) != null && lineCoverage < minimumLineCoverageRatio) {
       double uncoveredLines = MeasureUtils.getValue(context.getMeasure(CoreMetrics.UNCOVERED_LINES), 0.0);
       double linesToCover = MeasureUtils.getValue(context.getMeasure(CoreMetrics.LINES_TO_COVER), 0.0);
       double linesToCoverToReachThreshold = Math.ceil((linesToCover * minimumLineCoverageRatio / 100) - (linesToCover - uncoveredLines));
