@@ -84,6 +84,17 @@ public final class CommonChecksDecoratorTest {
   }
 
   @Test
+  public void do_execute_if_test_files_and_active_rules() {
+    when(fs.testFiles("java")).thenReturn(Lists.newArrayList(mock(InputFile.class)));
+    Rule duplicatedBlocksRule = Rule.create(REPO_KEY, CommonRulesRepository.RULE_DUPLICATED_BLOCKS, null);
+    profile.activateRule(duplicatedBlocksRule, RulePriority.MAJOR);
+    Rule lineCoverageRule = Rule.create(REPO_KEY, CommonRulesRepository.RULE_INSUFFICIENT_LINE_COVERAGE, null);
+    profile.activateRule(lineCoverageRule, RulePriority.MAJOR);
+
+    assertThat(decorator.shouldExecuteOnProject(null)).isTrue();
+  }
+
+  @Test
   public void do_not_execute_if_no_active_rules() {
     when(fs.mainFiles("java")).thenReturn(Lists.newArrayList(mock(InputFile.class)));
     // Q profile is empty
@@ -112,6 +123,40 @@ public final class CommonChecksDecoratorTest {
     when(fs.mainFiles("java")).thenReturn(Lists.newArrayList(mock(InputFile.class)));
     when(resource.getScope()).thenReturn(Resource.SCOPE_ENTITY);
     when(resource.getLanguage()).thenReturn(new Php());
+    when(context.getMeasure(CoreMetrics.DUPLICATED_BLOCKS)).thenReturn(new Measure(CoreMetrics.DUPLICATED_BLOCKS, 2.0));
+
+    Rule duplicatedBlocksRule = Rule.create(REPO_KEY, CommonRulesRepository.RULE_DUPLICATED_BLOCKS, null);
+    profile.activateRule(duplicatedBlocksRule, RulePriority.MAJOR);
+
+    // ugly, this method initializes the decorator
+    decorator.shouldExecuteOnProject(null);
+    decorator.decorate(resource, context);
+
+    verifyZeroInteractions(context);
+  }
+
+  @Test
+  public void do_not_decorate_directories() {
+    when(fs.mainFiles("java")).thenReturn(Lists.newArrayList(mock(InputFile.class)));
+    when(resource.getScope()).thenReturn(Resource.SCOPE_SPACE);
+    when(resource.getLanguage()).thenReturn(Java.INSTANCE);
+    when(context.getMeasure(CoreMetrics.DUPLICATED_BLOCKS)).thenReturn(new Measure(CoreMetrics.DUPLICATED_BLOCKS, 2.0));
+
+    Rule duplicatedBlocksRule = Rule.create(REPO_KEY, CommonRulesRepository.RULE_DUPLICATED_BLOCKS, null);
+    profile.activateRule(duplicatedBlocksRule, RulePriority.MAJOR);
+
+    // ugly, this method initializes the decorator
+    decorator.shouldExecuteOnProject(null);
+    decorator.decorate(resource, context);
+
+    verifyZeroInteractions(context);
+  }
+
+  @Test
+  public void do_not_decorate_if_missing_file_language() {
+    when(fs.mainFiles("java")).thenReturn(Lists.newArrayList(mock(InputFile.class)));
+    when(resource.getScope()).thenReturn(Resource.SCOPE_ENTITY);
+    when(resource.getLanguage()).thenReturn(null);
     when(context.getMeasure(CoreMetrics.DUPLICATED_BLOCKS)).thenReturn(new Measure(CoreMetrics.DUPLICATED_BLOCKS, 2.0));
 
     Rule duplicatedBlocksRule = Rule.create(REPO_KEY, CommonRulesRepository.RULE_DUPLICATED_BLOCKS, null);
