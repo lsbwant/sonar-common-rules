@@ -21,13 +21,13 @@ package org.sonar.commonrules.internal.checks;
 
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.sonar.api.batch.DecoratorContext;
-import org.sonar.api.batch.rule.ModuleRule;
-import org.sonar.api.component.ResourcePerspectives;
 import org.sonar.api.resources.Resource;
+import org.sonar.api.rules.Rule;
 
 public abstract class CommonCheck {
 
-  public abstract void checkResource(Resource resource, DecoratorContext context, ResourcePerspectives p, ModuleRule rule);
+  @SuppressWarnings("rawtypes")
+  public abstract void checkResource(Resource resource, DecoratorContext context, Rule rule);
 
   @Override
   public String toString() {

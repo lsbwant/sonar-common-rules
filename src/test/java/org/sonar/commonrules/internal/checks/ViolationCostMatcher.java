@@ -17,26 +17,28 @@
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02
  */
-package org.sonar.commonrules.internal;
+package org.sonar.commonrules.internal.checks;
 
-import org.sonar.api.rules.Rule;
-import org.sonar.api.rules.RuleRepository;
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
+import org.sonar.api.rules.Violation;
 
-import java.util.List;
 
-public class CommonRulesRepository extends RuleRepository {
-
-  private List<Rule> rules;
-
-  public CommonRulesRepository(String languageKey, List<Rule> rules) {
-    super(CommonRulesConstants.REPO_KEY_PREFIX + languageKey, languageKey);
-    setName("Common Sonar");
-    this.rules = rules;
+public class ViolationCostMatcher extends BaseMatcher<Violation> {
+  
+  private final double expectedCost;
+  
+  public ViolationCostMatcher(double expectedCost){
+    this.expectedCost = expectedCost;
   }
 
-  @Override
-  public List<Rule> createRules() {
-    return rules;
+  public boolean matches(Object violation) {
+    double cost = ((Violation)violation).getCost();
+    return cost == expectedCost;
+  }
+
+  public void describeTo(Description desc) {
+    desc.appendText("Cost == " + expectedCost);
   }
 
 }

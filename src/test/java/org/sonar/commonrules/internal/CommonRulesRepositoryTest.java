@@ -19,72 +19,38 @@
  */
 package org.sonar.commonrules.internal;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.sonar.api.server.rule.RuleDefinitions;
-import org.sonar.commonrules.api.CommonRule;
-import org.sonar.commonrules.internal.checks.CommentDensityCheck;
+import org.sonar.api.rules.Rule;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
-import static org.mockito.Mockito.when;
-
-import static org.mockito.Mockito.mock;
 import static org.fest.assertions.Assertions.assertThat;
 
 public final class CommonRulesRepositoryTest {
 
-  @org.junit.Rule
-  public ExpectedException thrown = ExpectedException.none();
-
-  private List<CommonRule> rules;
+  private List<Rule> rules;
 
   private CommonRulesRepository repository;
 
   @Before
   public void init() throws Exception {
-    rules = new ArrayList<CommonRule>();
+    rules = Lists.newArrayList(Rule.create("common-fake", "FakeRule"));
 
     repository = new CommonRulesRepository("fake", rules);
   }
 
   @Test
   public void shouldHaveCorrectDefinition() throws Exception {
-    RuleDefinitions.Context context = new RuleDefinitions.Context();
-    repository.define(context);
-    assertThat(context.repository(CommonRulesConstants.REPO_KEY_PREFIX + "fake")).isNotNull();
-    assertThat(context.repository(CommonRulesConstants.REPO_KEY_PREFIX + "fake").name()).isEqualTo("Common SonarQube");
-    assertThat(context.repository(CommonRulesConstants.REPO_KEY_PREFIX + "fake").language()).isEqualTo("fake");
+    assertThat(repository.getKey()).isEqualTo(CommonRulesConstants.REPO_KEY_PREFIX + "fake");
+    assertThat(repository.getName()).isEqualTo("Common Sonar");
+    assertThat(repository.getLanguage()).isEqualTo("fake");
   }
 
   @Test
-  public void shouldCreateRulesAndOverrideParameters() throws Exception {
-    CommonRule rule1 = mock(CommonRule.class);
-    when(rule1.getCheckClass()).thenReturn((Class) CommentDensityCheck.class);
-    when(rule1.getOverridenDefaultParams()).thenReturn(ImmutableMap.of("minimumCommentDensity", "80"));
-    rules.add(rule1);
-
-    RuleDefinitions.Context context = new RuleDefinitions.Context();
-    repository.define(context);
-
-    org.sonar.api.server.rule.RuleDefinitions.Rule rule = context.repositories().get(0).rule("InsufficientCommentDensity");
-    assertThat(rule.name()).isEqualTo("Insufficient comment density");
-    assertThat(rule.param("minimumCommentDensity").defaultValue()).isEqualTo("80");
-  }
-
-  @Test
-  public void shouldFailIfUnknowRuleParameter() throws Exception {
-    thrown.expect(IllegalStateException.class);
-    thrown.expectMessage("Parameter 'foo' on rule 'InsufficientCommentDensity' does not exist.");
-
-    CommonRule rule = mock(CommonRule.class);
-    when(rule.getCheckClass()).thenReturn((Class) CommentDensityCheck.class);
-    when(rule.getOverridenDefaultParams()).thenReturn(ImmutableMap.of("foo", "80"));
-    new CommonRulesRepository("fake", Arrays.asList(rule)).define(new RuleDefinitions.Context());
+  public void shouldCreateRules() throws Exception {
+    assertThat(repository.createRules()).isEqualTo(rules);
   }
 
 }

@@ -20,14 +20,11 @@
 package org.sonar.commonrules.internal.checks;
 
 import org.sonar.api.batch.DecoratorContext;
-import org.sonar.api.batch.rule.ModuleRule;
-import org.sonar.api.component.ResourcePerspectives;
-import org.sonar.api.issue.Issuable;
-import org.sonar.api.issue.Issue;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.measures.MeasureUtils;
 import org.sonar.api.resources.Resource;
 import org.sonar.api.resources.ResourceUtils;
+import org.sonar.api.rules.Violation;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 
@@ -39,19 +36,20 @@ import org.sonar.check.Rule;
     + "It gives the number of blocks in the file.</p>")
 public class DuplicatedBlocksCheck extends CommonCheck {
 
+  @SuppressWarnings("rawtypes")
   @Override
-  public void checkResource(Resource resource, DecoratorContext context, ResourcePerspectives perspectives, ModuleRule rule) {
+  public void checkResource(Resource resource, DecoratorContext context, org.sonar.api.rules.Rule rule) {
     double duplicatedBlocks = MeasureUtils.getValue(context.getMeasure(CoreMetrics.DUPLICATED_BLOCKS), 0.0);
     if (ResourceUtils.isEntity(resource) && duplicatedBlocks > 0) {
-      Issuable issuable = perspectives.as(Issuable.class, resource);
-      if (issuable != null) {
-        Issue issue = issuable.newIssueBuilder()
-          .ruleKey(rule.ruleKey())
-          .effortToFix(duplicatedBlocks)
-          .message((int) duplicatedBlocks + " duplicated blocks of code.")
-          .build();
-        issuable.addIssue(issue);
-      }
+      Violation violation = createViolation(resource, rule, duplicatedBlocks);
+      context.saveViolation(violation);
     }
+  }
+
+  @SuppressWarnings("rawtypes")
+  private Violation createViolation(Resource resource, org.sonar.api.rules.Rule rule, double duplicatedBlocks) {
+    Violation violation = Violation.create(rule, resource).setCost(duplicatedBlocks);
+    violation.setMessage((int) duplicatedBlocks + " duplicated blocks of code.");
+    return violation;
   }
 }

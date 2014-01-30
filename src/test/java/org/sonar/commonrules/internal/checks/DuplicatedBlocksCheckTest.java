@@ -22,20 +22,13 @@ package org.sonar.commonrules.internal.checks;
 import org.junit.Before;
 import org.junit.Test;
 import org.sonar.api.batch.DecoratorContext;
-import org.sonar.api.batch.rule.ModuleRule;
-import org.sonar.api.component.ResourcePerspectives;
-import org.sonar.api.issue.Issuable;
-import org.sonar.api.issue.Issuable.IssueBuilder;
-import org.sonar.api.issue.Issue;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.measures.Measure;
 import org.sonar.api.resources.Resource;
-import org.sonar.api.resources.Scopes;
-import org.sonar.api.rule.RuleKey;
+import org.sonar.api.rules.Violation;
 
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyDouble;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -47,47 +40,31 @@ public class DuplicatedBlocksCheckTest {
   private Resource resource;
   private DecoratorContext context;
 
-  private ResourcePerspectives perspectives;
-  private Issuable issuable;
-  private ModuleRule rule;
-  private IssueBuilder issueBuilder;
-
   @Before
   public void before() {
     check = new DuplicatedBlocksCheck();
     resource = mock(Resource.class);
     context = mock(DecoratorContext.class);
-
-    perspectives = mock(ResourcePerspectives.class);
-    issuable = mock(Issuable.class);
-    issueBuilder = mock(Issuable.IssueBuilder.class);
-    when(issueBuilder.ruleKey(any(RuleKey.class))).thenReturn(issueBuilder);
-    when(issueBuilder.effortToFix(anyDouble())).thenReturn(issueBuilder);
-    when(issueBuilder.message(anyString())).thenReturn(issueBuilder);
-    when(issuable.newIssueBuilder()).thenReturn(issueBuilder);
-    when(perspectives.as(Issuable.class, resource)).thenReturn(issuable);
-    rule = mock(ModuleRule.class);
   }
 
   @Test
   public void checkShouldGenerateViolationOnFileWithDuplicatedBlocks() {
-    when(resource.getScope()).thenReturn(Scopes.FILE);
+    when(resource.getScope()).thenReturn(Resource.SCOPE_ENTITY);
     when(context.getMeasure(CoreMetrics.DUPLICATED_BLOCKS)).thenReturn(new Measure(CoreMetrics.DUPLICATED_BLOCKS, 2.0));
 
-    check.checkResource(resource, context, perspectives, rule);
+    check.checkResource(resource, context, null);
 
-    verify(issueBuilder, times(1)).effortToFix(2d);
-    verify(issuable, times(1)).addIssue(any(Issue.class));
+    verify(context, times(1)).saveViolation(argThat(new ViolationCostMatcher(2)));
   }
 
   @Test
   public void checkShouldNotGenerateViolationOnFileWithoutDuplicatedBlocks() {
-    when(resource.getScope()).thenReturn(Scopes.FILE);
+    when(resource.getScope()).thenReturn(Resource.SCOPE_ENTITY);
     when(context.getMeasure(CoreMetrics.DUPLICATED_BLOCKS)).thenReturn(new Measure(CoreMetrics.DUPLICATED_BLOCKS, 0.0));
 
-    check.checkResource(resource, context, perspectives, rule);
+    check.checkResource(resource, context, null);
 
-    verify(issuable, times(0)).addIssue(any(Issue.class));
+    verify(context, times(0)).saveViolation(any(Violation.class));
   }
 
   @Test
@@ -95,9 +72,9 @@ public class DuplicatedBlocksCheckTest {
     when(resource.getScope()).thenReturn(Resource.SCOPE_SPACE);
     when(context.getMeasure(CoreMetrics.DUPLICATED_BLOCKS)).thenReturn(new Measure(CoreMetrics.DUPLICATED_BLOCKS, 4.0));
 
-    check.checkResource(resource, context, perspectives, rule);
+    check.checkResource(resource, context, null);
 
-    verify(issuable, times(0)).addIssue(any(Issue.class));
+    verify(context, times(0)).saveViolation(any(Violation.class));
   }
 
 }

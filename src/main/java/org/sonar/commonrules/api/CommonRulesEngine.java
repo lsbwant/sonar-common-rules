@@ -22,17 +22,15 @@ package org.sonar.commonrules.api;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import org.sonar.api.rules.AnnotationRuleParser;
+import org.sonar.api.rules.Rule;
 import org.sonar.commonrules.internal.CommonChecksDecorator;
+import org.sonar.commonrules.internal.CommonRulesConstants;
 import org.sonar.commonrules.internal.CommonRulesRepository;
-import org.sonar.commonrules.internal.checks.BranchCoverageCheck;
-import org.sonar.commonrules.internal.checks.CommentDensityCheck;
-import org.sonar.commonrules.internal.checks.CommonCheck;
-import org.sonar.commonrules.internal.checks.DuplicatedBlocksCheck;
-import org.sonar.commonrules.internal.checks.FailedUnitTestsCheck;
-import org.sonar.commonrules.internal.checks.LineCoverageCheck;
-import org.sonar.commonrules.internal.checks.SkippedUnitTestsCheck;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Sonar Common Rules Engine on which rules can be activated.
@@ -40,40 +38,34 @@ import java.util.List;
 public class CommonRulesEngine {
 
   private String languageKey;
-  private List<CommonRule> activatedRules = Lists.newArrayList();
+  private Map<String, Rule> availableRulesbyKey = Maps.newHashMap();
+  private List<CommonRule> commonRules = Lists.newArrayList();
 
   CommonRulesEngine(String languageKey) {
     Preconditions.checkNotNull(languageKey, "The language key can't be null.");
+
     this.languageKey = languageKey;
+    List<Rule> availableRules = new AnnotationRuleParser().parse(CommonRulesConstants.REPO_KEY_PREFIX + this.languageKey, CommonRulesConstants.CLASSES);
+    for (Rule rule : availableRules) {
+      availableRulesbyKey.put(rule.getKey(), rule);
+    }
   }
 
-  public CommonRule activateBranchCoverageCheck() {
-    return createCommonRule(BranchCoverageCheck.class);
-  }
+  /**
+   * Activate the rule corresponding the the given key.
+   * 
+   * @param ruleKey the rule of the key
+   * @return the rule that will be activated, and on which parameter default values can be specified.
+   */
+  public CommonRule activateRule(String ruleKey) {
+    Preconditions.checkNotNull(ruleKey, "The rule key can't be null.");
 
-  public CommonRule activateCommentDensityCheck() {
-    return createCommonRule(CommentDensityCheck.class);
-  }
-
-  public CommonRule activateDuplicatedBlocksCheck() {
-    return createCommonRule(DuplicatedBlocksCheck.class);
-  }
-
-  public CommonRule activateFailedUnitTestsCheck() {
-    return createCommonRule(FailedUnitTestsCheck.class);
-  }
-
-  public CommonRule activateLineCoverageCheck() {
-    return createCommonRule(LineCoverageCheck.class);
-  }
-
-  public CommonRule activateSkippedUnitTestsCheck() {
-    return createCommonRule(SkippedUnitTestsCheck.class);
-  }
-
-  private CommonRule createCommonRule(Class<? extends CommonCheck> clazz) {
-    CommonRule commonRule = new CommonRule(clazz);
-    activatedRules.add(commonRule);
+    Rule rule = availableRulesbyKey.get(ruleKey);
+    if (rule == null) {
+      throw new IllegalStateException("Sonar common rule '" + ruleKey + "' does not exist.");
+    }
+    CommonRule commonRule = new CommonRule(rule);
+    commonRules.add(commonRule);
     return commonRule;
   }
 
@@ -83,7 +75,7 @@ public class CommonRulesEngine {
     List extensions = Lists.newArrayList();
 
     // the rule repository created based on the configured rules
-    extensions.add(new CommonRulesRepository(languageKey, activatedRules));
+    extensions.add(new CommonRulesRepository(languageKey, getDeclaredRules()));
 
     // and the decorator which runs the checks
     extensions.add(CommonChecksDecorator.class);
@@ -91,8 +83,12 @@ public class CommonRulesEngine {
     return extensions;
   }
 
-  public List<CommonRule> getDeclaredCheck() {
-    return activatedRules;
+  @VisibleForTesting
+  List<Rule> getDeclaredRules() {
+    List<Rule> declaredRules = Lists.newArrayList();
+    for (CommonRule commonRule : commonRules) {
+      declaredRules.add(commonRule.getRule());
+    }
+    return declaredRules;
   }
-
 }

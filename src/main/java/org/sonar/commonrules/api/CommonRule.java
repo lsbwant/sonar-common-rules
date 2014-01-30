@@ -20,35 +20,27 @@
 package org.sonar.commonrules.api;
 
 import com.google.common.base.Preconditions;
-import org.sonar.commonrules.internal.checks.CommonCheck;
-
-import java.util.HashMap;
-import java.util.Map;
+import org.sonar.api.rules.Rule;
+import org.sonar.api.rules.RuleParam;
 
 /**
  * Sonar Common Rule that will be activated, and on which parameter default values can be specified.
  */
 public class CommonRule {
 
-  private Map<String, String> overridenDefaultParams = new HashMap<String, String>();
+  private Rule rule;
 
-  private final Class<? extends CommonCheck> checkClass;
-
-  CommonRule(Class<? extends CommonCheck> checkClass) {
-    this.checkClass = checkClass;
+  CommonRule(Rule rule) {
+    this.rule = rule;
   }
 
-  public Class<? extends CommonCheck> getCheckClass() {
-    return checkClass;
-  }
-
-  public Map<String, String> getOverridenDefaultParams() {
-    return overridenDefaultParams;
+  Rule getRule() {
+    return rule;
   }
 
   /**
    * Specifies the default value for the given rule parameter.
-   *
+   * 
    * @param paramKey the key of the parameter
    * @param paramValue the default value for this parameter
    * @return the Sonar Common Rule
@@ -57,7 +49,11 @@ public class CommonRule {
     Preconditions.checkNotNull(paramKey, "The parameter key can't be null.");
     Preconditions.checkNotNull(paramValue, "The parameter value can't be null.");
 
-    overridenDefaultParams.put(paramKey, paramValue);
+    RuleParam param = rule.getParam(paramKey);
+    if (param == null) {
+      throw new IllegalStateException("Parameter '" + paramKey + "' on rule '" + rule.getKey() + "' does not exist.");
+    }
+    param.setDefaultValue(paramValue);
     return this;
   }
 
