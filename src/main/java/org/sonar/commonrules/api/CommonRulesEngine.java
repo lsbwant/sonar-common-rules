@@ -27,7 +27,6 @@ import org.sonar.api.resources.ProjectFileSystem;
 import org.sonar.commonrules.internal.CommonChecksDecorator;
 import org.sonar.commonrules.internal.DefaultCommonRulesRepository;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -50,10 +49,12 @@ public abstract class CommonRulesEngine extends ExtensionProvider implements Ser
   private final ProjectFileSystem fs;
 
   public CommonRulesEngine(String language) {
-    this(language, null, null);
+    this.language = language;
+    this.rulesProfile = null;
+    this.fs = null;
   }
 
-  public CommonRulesEngine(String language, @Nullable RulesProfile rulesProfile, @Nullable ProjectFileSystem fs) {
+  public CommonRulesEngine(String language, RulesProfile rulesProfile, ProjectFileSystem fs) {
     this.language = language;
     this.rulesProfile = rulesProfile;
     this.fs = fs;
