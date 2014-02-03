@@ -87,6 +87,7 @@ public final class CommonRulesEngineTest {
 
     CommonRulesEngine.LanguageDecorator decorator = pico.getComponent(CommonRulesEngine.LanguageDecorator.class);
     assertThat(decorator.language()).isEqualTo("java");
+    assertThat(decorator.toString()).isEqualTo("Commons Rules Decorator for java");
   }
 
   @Test
@@ -98,5 +99,4 @@ public final class CommonRulesEngineTest {
     CommonRulesRepository repo = (CommonRulesRepository) extensions.get(1);
     assertThat(repo.rules()).hasSize(3);
   }
-
 }

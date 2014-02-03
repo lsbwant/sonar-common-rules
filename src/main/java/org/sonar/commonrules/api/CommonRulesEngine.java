@@ -71,5 +71,10 @@ public abstract class CommonRulesEngine extends ExtensionProvider implements Ser
     public LanguageDecorator(ProjectFileSystem fs, RulesProfile qProfile) {
       super(fs, qProfile, language);
     }
+
+    @Override
+    public String toString() {
+      return "Commons Rules Decorator for " + language;
+    }
   }
 }
