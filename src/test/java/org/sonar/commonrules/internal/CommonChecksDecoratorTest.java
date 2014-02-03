@@ -57,7 +57,7 @@ public final class CommonChecksDecoratorTest {
 
   @Test
   public void testToString() throws Exception {
-    assertThat(decorator.toString()).isEqualTo("SonarQube Common Rules for java");
+    assertThat(decorator.toString()).isEqualTo("Common Rules for java");
   }
 
   @Test

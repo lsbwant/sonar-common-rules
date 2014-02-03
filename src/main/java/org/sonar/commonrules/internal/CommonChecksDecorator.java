@@ -37,7 +37,7 @@ import java.util.List;
 
 @DependsUpon(DecoratorBarriers.START_VIOLATIONS_GENERATION)
 @DependedUpon(DecoratorBarriers.END_OF_VIOLATIONS_GENERATION)
-public abstract class CommonChecksDecorator implements Decorator {
+public class CommonChecksDecorator implements Decorator {
 
   private final ProjectFileSystem fs;
   private final String language;
@@ -82,6 +82,6 @@ public abstract class CommonChecksDecorator implements Decorator {
 
   @Override
   public String toString() {
-    return "SonarQube Common Rules for " + language;
+    return "Common Rules for " + language;
   }
 }

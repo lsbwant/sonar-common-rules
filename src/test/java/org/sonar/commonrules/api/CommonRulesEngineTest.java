@@ -25,7 +25,9 @@ import org.picocontainer.containers.TransientPicoContainer;
 import org.sonar.api.profiles.RulesProfile;
 import org.sonar.api.resources.ProjectFileSystem;
 import org.sonar.api.rules.Rule;
+import org.sonar.commonrules.internal.CommonChecksDecorator;
 
+import javax.annotation.Nullable;
 import java.util.List;
 
 import static org.fest.assertions.Assertions.assertThat;
@@ -34,8 +36,12 @@ import static org.mockito.Mockito.mock;
 public final class CommonRulesEngineTest {
 
   static class JavaCommonRulesEngine extends CommonRulesEngine {
+    public JavaCommonRulesEngine(@Nullable RulesProfile rulesProfile, @Nullable ProjectFileSystem fs) {
+      super("java", rulesProfile, fs);
+    }
+
     public JavaCommonRulesEngine() {
-      super("java");
+      this(null, null);
     }
 
     @Override
@@ -71,11 +77,11 @@ public final class CommonRulesEngineTest {
   }
 
   @Test
-  public void provide_batch_decorator() throws Exception {
-    JavaCommonRulesEngine engine = new JavaCommonRulesEngine();
+  public void provide_batch_extensions() throws Exception {
+    JavaCommonRulesEngine engine = new JavaCommonRulesEngine(mock(RulesProfile.class), mock(ProjectFileSystem.class));
     List extensions = engine.provide();
 
-    assertThat(extensions).hasSize(2).contains(CommonRulesEngine.LanguageDecorator.class);
+    assertThat(extensions).hasSize(2);
 
     TransientPicoContainer pico = new TransientPicoContainer();
     pico.as(Characteristics.CACHE).addComponent(engine);
@@ -85,9 +91,9 @@ public final class CommonRulesEngineTest {
       pico.as(Characteristics.CACHE).addComponent(extension);
     }
 
-    CommonRulesEngine.LanguageDecorator decorator = pico.getComponent(CommonRulesEngine.LanguageDecorator.class);
+    CommonChecksDecorator decorator = pico.getComponent(CommonChecksDecorator.class);
     assertThat(decorator.language()).isEqualTo("java");
-    assertThat(decorator.toString()).isEqualTo("Commons Rules Decorator for java");
+    assertThat(decorator.toString()).isEqualTo("Common Rules for java");
   }
 
   @Test
@@ -95,8 +101,9 @@ public final class CommonRulesEngineTest {
     JavaCommonRulesEngine engine = new JavaCommonRulesEngine();
     List extensions = engine.provide();
 
-    assertThat(extensions.get(1)).isInstanceOf(CommonRulesRepository.class);
-    CommonRulesRepository repo = (CommonRulesRepository) extensions.get(1);
+    assertThat(extensions).hasSize(1);
+    assertThat(extensions.get(0)).isInstanceOf(CommonRulesRepository.class);
+    CommonRulesRepository repo = (CommonRulesRepository) extensions.get(0);
     assertThat(repo.rules()).hasSize(3);
   }
 }

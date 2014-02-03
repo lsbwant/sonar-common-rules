@@ -27,7 +27,8 @@ import org.sonar.api.resources.ProjectFileSystem;
 import org.sonar.commonrules.internal.CommonChecksDecorator;
 import org.sonar.commonrules.internal.DefaultCommonRulesRepository;
 
-import java.util.Arrays;
+import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -35,19 +36,27 @@ import java.util.List;
  * This class should be extended by any plugin that wants to use some Common Rules.
  * </p>
  * <p>
- * <b>Important:</b> both constructors must be inherited in order to have a fully working extension on both server
+ * <b>Important:</b> both constructors must be implemented in order to have a fully working extension on both server
  * and batch side
  * <p>
  * <p>
- * See JavaCommonRulesEngineProvider in the sonar-java-plugin to have an example of how this works.
+ * See JavaCommonRulesEngine in the sonar-java-plugin to have an example of how this works.
  * </p>
  */
 public abstract class CommonRulesEngine extends ExtensionProvider implements ServerExtension, BatchExtension {
 
   private final String language;
+  private final RulesProfile rulesProfile;
+  private final ProjectFileSystem fs;
 
   public CommonRulesEngine(String language) {
+    this(language, null, null);
+  }
+
+  public CommonRulesEngine(String language, @Nullable RulesProfile rulesProfile, @Nullable ProjectFileSystem fs) {
     this.language = language;
+    this.rulesProfile = rulesProfile;
+    this.fs = fs;
   }
 
   protected abstract void doEnableRules(CommonRulesRepository repository);
@@ -58,23 +67,17 @@ public abstract class CommonRulesEngine extends ExtensionProvider implements Ser
   @SuppressWarnings("rawtypes")
   @Override
   public List provide() {
-    return Arrays.asList(LanguageDecorator.class, newRepository());
+    List extensions = new ArrayList();
+    if (rulesProfile != null && fs != null) {
+      extensions.add(new CommonChecksDecorator(fs, rulesProfile, language));
+    }
+    extensions.add(newRepository());
+    return extensions;
   }
 
   public CommonRulesRepository newRepository() {
     CommonRulesRepository repository = new DefaultCommonRulesRepository(language);
     doEnableRules(repository);
     return repository;
-  }
-
-  public class LanguageDecorator extends CommonChecksDecorator {
-    public LanguageDecorator(ProjectFileSystem fs, RulesProfile qProfile) {
-      super(fs, qProfile, language);
-    }
-
-    @Override
-    public String toString() {
-      return "Commons Rules Decorator for " + language;
-    }
   }
 }
