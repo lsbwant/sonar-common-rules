@@ -19,15 +19,11 @@
  */
 package org.sonar.commonrules.api;
 
-import org.sonar.api.BatchExtension;
 import org.sonar.api.ExtensionProvider;
 import org.sonar.api.ServerExtension;
-import org.sonar.api.profiles.RulesProfile;
-import org.sonar.api.resources.ProjectFileSystem;
-import org.sonar.commonrules.internal.CommonChecksDecorator;
 import org.sonar.commonrules.internal.DefaultCommonRulesRepository;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -42,22 +38,12 @@ import java.util.List;
  * See JavaCommonRulesEngine in the sonar-java-plugin to have an example of how this works.
  * </p>
  */
-public abstract class CommonRulesEngine extends ExtensionProvider implements ServerExtension, BatchExtension {
+public abstract class CommonRulesEngine extends ExtensionProvider implements ServerExtension {
 
   private final String language;
-  private final RulesProfile rulesProfile;
-  private final ProjectFileSystem fs;
 
   public CommonRulesEngine(String language) {
     this.language = language;
-    this.rulesProfile = null;
-    this.fs = null;
-  }
-
-  public CommonRulesEngine(String language, RulesProfile rulesProfile, ProjectFileSystem fs) {
-    this.language = language;
-    this.rulesProfile = rulesProfile;
-    this.fs = fs;
   }
 
   protected abstract void doEnableRules(CommonRulesRepository repository);
@@ -68,12 +54,7 @@ public abstract class CommonRulesEngine extends ExtensionProvider implements Ser
   @SuppressWarnings("rawtypes")
   @Override
   public List provide() {
-    List extensions = new ArrayList();
-    if (rulesProfile != null && fs != null) {
-      extensions.add(new CommonChecksDecorator(fs, rulesProfile, language));
-    }
-    extensions.add(newRepository());
-    return extensions;
+    return Arrays.asList(newRepository());
   }
 
   public CommonRulesRepository newRepository() {

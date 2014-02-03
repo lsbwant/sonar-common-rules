@@ -17,7 +17,7 @@
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02
  */
-package org.sonar.commonrules.internal;
+package org.sonar.commonrules.api;
 
 import org.sonar.api.batch.*;
 import org.sonar.api.checks.AnnotationCheckFactory;
@@ -28,6 +28,8 @@ import org.sonar.api.resources.Project;
 import org.sonar.api.resources.ProjectFileSystem;
 import org.sonar.api.resources.Resource;
 import org.sonar.api.resources.ResourceUtils;
+import org.sonar.commonrules.internal.CommonRulesConstants;
+import org.sonar.commonrules.internal.DefaultCommonRulesRepository;
 import org.sonar.commonrules.internal.checks.CommonCheck;
 
 import java.util.Arrays;
@@ -37,7 +39,7 @@ import java.util.List;
 
 @DependsUpon(DecoratorBarriers.START_VIOLATIONS_GENERATION)
 @DependedUpon(DecoratorBarriers.END_OF_VIOLATIONS_GENERATION)
-public class CommonChecksDecorator implements Decorator {
+public abstract class CommonRulesDecorator implements Decorator {
 
   private final ProjectFileSystem fs;
   private final String language;
@@ -45,10 +47,10 @@ public class CommonChecksDecorator implements Decorator {
   private AnnotationCheckFactory checkFactory;
   private Collection<CommonCheck> activeChecks = Collections.emptyList();
 
-  public CommonChecksDecorator(ProjectFileSystem fs, RulesProfile qProfile, String language) {
+  public CommonRulesDecorator(String language, ProjectFileSystem fs, RulesProfile qProfile) {
+    this.language = language;
     this.fs = fs;
     this.qProfile = qProfile;
-    this.language = language;
   }
 
   public String language() {

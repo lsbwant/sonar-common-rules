@@ -20,28 +20,17 @@
 package org.sonar.commonrules.api;
 
 import org.junit.Test;
-import org.picocontainer.Characteristics;
-import org.picocontainer.containers.TransientPicoContainer;
-import org.sonar.api.profiles.RulesProfile;
-import org.sonar.api.resources.ProjectFileSystem;
 import org.sonar.api.rules.Rule;
-import org.sonar.commonrules.internal.CommonChecksDecorator;
 
-import javax.annotation.Nullable;
 import java.util.List;
 
 import static org.fest.assertions.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 public final class CommonRulesEngineTest {
 
   static class JavaCommonRulesEngine extends CommonRulesEngine {
-    public JavaCommonRulesEngine(@Nullable RulesProfile rulesProfile, @Nullable ProjectFileSystem fs) {
-      super("java", rulesProfile, fs);
-    }
-
     public JavaCommonRulesEngine() {
-      this(null, null);
+      super("java");
     }
 
     @Override
@@ -74,26 +63,6 @@ public final class CommonRulesEngineTest {
     Rule lineCoverage = repo.rule(CommonRulesRepository.RULE_INSUFFICIENT_LINE_COVERAGE);
     assertThat(lineCoverage).isNotNull();
     assertThat(Double.parseDouble(lineCoverage.getParam(CommonRulesRepository.PARAM_MIN_LINE_COVERAGE).getDefaultValue())).isEqualTo(82.0);
-  }
-
-  @Test
-  public void provide_batch_extensions() throws Exception {
-    JavaCommonRulesEngine engine = new JavaCommonRulesEngine(mock(RulesProfile.class), mock(ProjectFileSystem.class));
-    List extensions = engine.provide();
-
-    assertThat(extensions).hasSize(2);
-
-    TransientPicoContainer pico = new TransientPicoContainer();
-    pico.as(Characteristics.CACHE).addComponent(engine);
-    pico.as(Characteristics.CACHE).addComponent(mock(ProjectFileSystem.class));
-    pico.as(Characteristics.CACHE).addComponent(mock(RulesProfile.class));
-    for (Object extension : extensions) {
-      pico.as(Characteristics.CACHE).addComponent(extension);
-    }
-
-    CommonChecksDecorator decorator = pico.getComponent(CommonChecksDecorator.class);
-    assertThat(decorator.language()).isEqualTo("java");
-    assertThat(decorator.toString()).isEqualTo("Common Rules for java");
   }
 
   @Test

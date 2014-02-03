@@ -17,10 +17,9 @@
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02
  */
-package org.sonar.commonrules.internal;
+package org.sonar.commonrules.api;
 
 import com.google.common.collect.Lists;
-import org.junit.Before;
 import org.junit.Test;
 import org.sonar.api.batch.DecoratorContext;
 import org.sonar.api.measures.CoreMetrics;
@@ -30,7 +29,7 @@ import org.sonar.api.profiles.RulesProfile;
 import org.sonar.api.resources.*;
 import org.sonar.api.rules.Rule;
 import org.sonar.api.rules.RulePriority;
-import org.sonar.commonrules.api.CommonRulesRepository;
+import org.sonar.commonrules.internal.CommonRulesConstants;
 import org.sonar.commonrules.internal.checks.ViolationCostMatcher;
 
 import java.util.List;
@@ -39,25 +38,22 @@ import static org.fest.assertions.Assertions.assertThat;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.*;
 
-public final class CommonChecksDecoratorTest {
+public final class CommonRulesDecoratorTest {
 
   private static final String REPO_KEY = CommonRulesConstants.REPO_KEY_PREFIX + "java";
 
   Resource resource = mock(Resource.class);
   DecoratorContext context = mock(DecoratorContext.class);
   ProjectFileSystem fs = mock(ProjectFileSystem.class);
-  CommonChecksDecorator decorator;
   RulesProfile profile = RulesProfile.create("My SQALE profile", "java");
+  CommonRulesDecorator decorator = new CommonRulesDecorator("java", fs, profile) {
+  };
 
-  @Before
-  public void init() {
-    decorator = new CommonChecksDecorator(fs, profile, "java") {
-    };
-  }
 
   @Test
-  public void testToString() throws Exception {
+  public void test_metadata() throws Exception {
     assertThat(decorator.toString()).isEqualTo("Common Rules for java");
+    assertThat(decorator.language()).isEqualTo("java");
   }
 
   @Test
