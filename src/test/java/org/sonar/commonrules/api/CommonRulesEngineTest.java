@@ -45,6 +45,10 @@ public final class CommonRulesEngineTest {
     }
   }
 
+  @Test
+  public void test_language() throws Exception {
+    assertThat(new JavaCommonRulesEngine().language()).isEqualTo("java");
+  }
 
   @Test
   public void enable_rules() throws Exception {

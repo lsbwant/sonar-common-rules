@@ -46,6 +46,10 @@ public abstract class CommonRulesEngine extends ExtensionProvider implements Ser
     this.language = language;
   }
 
+  public String language() {
+    return language;
+  }
+
   protected abstract void doEnableRules(CommonRulesRepository repository);
 
   /**
