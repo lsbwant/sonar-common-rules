@@ -51,7 +51,7 @@ public class CommentDensityCheck extends CommonCheck {
 
     double commentDensity = MeasureUtils.getValue(context.getMeasure(CoreMetrics.COMMENT_LINES_DENSITY), 0.0);
     double linesOfCode = MeasureUtils.getValue(context.getMeasure(CoreMetrics.NCLOC), 0.0);
-    if (commentDensity < minimumCommentDensity && linesOfCode != 0) {
+    if (commentDensity < minimumCommentDensity && Double.doubleToRawLongBits(linesOfCode) != 0L) {
       double commentLines = MeasureUtils.getValue(context.getMeasure(CoreMetrics.COMMENT_LINES), 0.0);
       double missingCommentLines = Math.ceil(minimumCommentDensity * linesOfCode / (100 - minimumCommentDensity) - commentLines);
 
