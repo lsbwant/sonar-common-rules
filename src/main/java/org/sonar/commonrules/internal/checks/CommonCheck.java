@@ -22,13 +22,28 @@ package org.sonar.commonrules.internal.checks;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
 import org.sonar.api.batch.DecoratorContext;
+import org.sonar.api.component.ResourcePerspectives;
+import org.sonar.api.issue.Issuable;
 import org.sonar.api.resources.Resource;
-import org.sonar.api.rules.Rule;
+import org.sonar.api.rule.RuleKey;
+
+import javax.annotation.Nullable;
 
 public abstract class CommonCheck {
 
   @SuppressWarnings("rawtypes")
-  public abstract void checkResource(Resource resource, DecoratorContext context, Rule rule);
+  public abstract void checkResource(Resource resource, DecoratorContext context, RuleKey rule, ResourcePerspectives perspectives);
+
+  protected void createIssue(Resource resource, ResourcePerspectives perspectives, RuleKey ruleKey, @Nullable Double effortToFix, String message) {
+    Issuable issuable = perspectives.as(Issuable.class, resource);
+    if (issuable != null) {
+      issuable.addIssue(issuable.newIssueBuilder()
+        .ruleKey(ruleKey)
+        .effortToFix(effortToFix)
+        .message(message)
+        .build());
+    }
+  }
 
   @Override
   public String toString() {

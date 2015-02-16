@@ -19,29 +19,53 @@
  */
 package org.sonar.commonrules.internal;
 
-import org.sonar.api.rules.AnnotationRuleParser;
-import org.sonar.api.rules.Rule;
-import org.sonar.api.rules.RuleParam;
-import org.sonar.api.rules.RuleRepository;
+import org.sonar.api.server.rule.RulesDefinition;
+import org.sonar.api.server.rule.RulesDefinitionAnnotationLoader;
 import org.sonar.commonrules.api.CommonRulesRepository;
+import org.sonar.commonrules.internal.checks.BranchCoverageCheck;
+import org.sonar.commonrules.internal.checks.CommentDensityCheck;
+import org.sonar.commonrules.internal.checks.DuplicatedBlocksCheck;
+import org.sonar.commonrules.internal.checks.FailedUnitTestsCheck;
+import org.sonar.commonrules.internal.checks.LineCoverageCheck;
+import org.sonar.commonrules.internal.checks.SkippedUnitTestsCheck;
 
 import javax.annotation.Nullable;
-import java.util.*;
 
-public class DefaultCommonRulesRepository extends RuleRepository implements CommonRulesRepository {
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-  private final Map<String, Rule> supportedRulesByKey;
-  private final List<Rule> rules = new ArrayList<Rule>();
+public class DefaultCommonRulesRepository implements RulesDefinition, CommonRulesRepository {
+
+  private List<Class> enabledChecks = new ArrayList<Class>();
+  private String language;
+  private Double minimumBranchCoverageRatio;
+  private Double minimumLineCoverageRatio;
+  private Double minimumCommentDensity;
 
   public DefaultCommonRulesRepository(String language) {
-    super(keyForLanguage(language), language);
-    setName("Common SonarQube");
+    this.language = language;
+  }
 
-    supportedRulesByKey = new HashMap<String, Rule>();
-    List<Rule> supportedRules = new AnnotationRuleParser().parse(keyForLanguage(CommonRulesConstants.REPO_KEY_PREFIX), CommonRulesConstants.CLASSES);
-    for (Rule supportedRule : supportedRules) {
-      supportedRulesByKey.put(supportedRule.getKey(), supportedRule);
+  @Override
+  public void define(Context context) {
+    NewRepository repo = context.createRepository(keyForLanguage(language), language)
+      .setName("Common SonarQube");
+    new RulesDefinitionAnnotationLoader().load(repo, enabledChecks.toArray(new Class[0]));
+    NewRule insufBranchCoverage = repo.rule(RULE_INSUFFICIENT_BRANCH_COVERAGE);
+    if (insufBranchCoverage != null && minimumBranchCoverageRatio != null) {
+      insufBranchCoverage.param(PARAM_MIN_BRANCH_COVERAGE).setDefaultValue("" + minimumBranchCoverageRatio);
     }
+    NewRule insufLineCoverage = repo.rule(RULE_INSUFFICIENT_LINE_COVERAGE);
+    if (insufLineCoverage != null && minimumLineCoverageRatio != null) {
+      insufLineCoverage.param(PARAM_MIN_LINE_COVERAGE).setDefaultValue("" + minimumLineCoverageRatio);
+    }
+    NewRule insufCommentDensity = repo.rule(RULE_INSUFFICIENT_COMMENT_DENSITY);
+    if (insufCommentDensity != null && minimumCommentDensity != null) {
+      insufCommentDensity.param(PARAM_MIN_COMMENT_DENSITY).setDefaultValue("" + minimumCommentDensity);
+    }
+    repo.done();
   }
 
   public static String keyForLanguage(String language) {
@@ -50,37 +74,40 @@ public class DefaultCommonRulesRepository extends RuleRepository implements Comm
 
   @Override
   public DefaultCommonRulesRepository enableInsufficientBranchCoverageRule(@Nullable Double minimumBranchCoverageRatio) {
-    enableRule(RULE_INSUFFICIENT_BRANCH_COVERAGE, toMap(PARAM_MIN_BRANCH_COVERAGE, minimumBranchCoverageRatio));
+    this.minimumBranchCoverageRatio = minimumBranchCoverageRatio;
+    enabledChecks.add(BranchCoverageCheck.class);
     return this;
   }
 
   @Override
   public DefaultCommonRulesRepository enableInsufficientLineCoverageRule(@Nullable Double minimumLineCoverageRatio) {
-    enableRule(RULE_INSUFFICIENT_LINE_COVERAGE, toMap(PARAM_MIN_LINE_COVERAGE, minimumLineCoverageRatio));
+    this.minimumLineCoverageRatio = minimumLineCoverageRatio;
+    enabledChecks.add(LineCoverageCheck.class);
     return this;
   }
 
   @Override
   public DefaultCommonRulesRepository enableInsufficientCommentDensityRule(@Nullable Double minimumCommentDensity) {
-    enableRule(RULE_INSUFFICIENT_COMMENT_DENSITY, toMap(PARAM_MIN_COMMENT_DENSITY, minimumCommentDensity));
+    this.minimumCommentDensity = minimumCommentDensity;
+    enabledChecks.add(CommentDensityCheck.class);
     return this;
   }
 
   @Override
   public DefaultCommonRulesRepository enableDuplicatedBlocksRule() {
-    enableRule(RULE_DUPLICATED_BLOCKS, Collections.<String, String>emptyMap());
+    enabledChecks.add(DuplicatedBlocksCheck.class);
     return this;
   }
 
   @Override
   public DefaultCommonRulesRepository enableSkippedUnitTestsRule() {
-    enableRule(RULE_SKIPPED_UNIT_TESTS, Collections.<String, String>emptyMap());
+    enabledChecks.add(SkippedUnitTestsCheck.class);
     return this;
   }
 
   @Override
   public DefaultCommonRulesRepository enableFailedUnitTestsRule() {
-    enableRule(RULE_FAILED_UNIT_TESTS, Collections.<String, String>emptyMap());
+    enabledChecks.add(FailedUnitTestsCheck.class);
     return this;
   }
 
@@ -90,44 +117,5 @@ public class DefaultCommonRulesRepository extends RuleRepository implements Comm
       map.put(key, String.valueOf(value));
     }
     return map;
-  }
-
-  DefaultCommonRulesRepository enableRule(String ruleKey, Map<String, String> params) {
-    Rule rule = supportedRulesByKey.get(ruleKey);
-    if (rule == null) {
-      throw new IllegalStateException("Unknown rule: " + ruleKey);
-    }
-    for (Map.Entry<String, String> entry : params.entrySet()) {
-      String paramKey = entry.getKey();
-      RuleParam param = rule.getParam(paramKey);
-      if (param == null) {
-        throw new IllegalStateException(String.format("Rule '%s' has no parameter named '%s'", ruleKey, paramKey));
-      }
-      param.setDefaultValue(entry.getValue());
-    }
-    rules.add(rule);
-    return this;
-  }
-
-
-  @Override
-  public List<Rule> createRules() {
-    return rules();
-  }
-
-  @Override
-  public List<Rule> rules() {
-    return rules;
-  }
-
-  @Nullable
-  @Override
-  public Rule rule(String ruleKey) {
-    for (Rule rule : rules) {
-      if (rule.getKey().equals(ruleKey)) {
-        return rule;
-      }
-    }
-    return null;
   }
 }

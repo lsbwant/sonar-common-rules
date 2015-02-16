@@ -20,10 +20,11 @@
 package org.sonar.commonrules.internal.checks;
 
 import org.sonar.api.batch.DecoratorContext;
+import org.sonar.api.component.ResourcePerspectives;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.measures.MeasureUtils;
 import org.sonar.api.resources.Resource;
-import org.sonar.api.rules.Violation;
+import org.sonar.api.rule.RuleKey;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 
@@ -35,20 +36,15 @@ import org.sonar.check.Rule;
     + "It gives the number of blocks in the file.</p>")
 public class DuplicatedBlocksCheck extends CommonCheck {
 
-  @SuppressWarnings("rawtypes")
   @Override
-  public void checkResource(Resource resource, DecoratorContext context, org.sonar.api.rules.Rule rule) {
+  public void checkResource(Resource resource, DecoratorContext context, RuleKey rule, ResourcePerspectives perspectives) {
     double duplicatedBlocks = MeasureUtils.getValue(context.getMeasure(CoreMetrics.DUPLICATED_BLOCKS), 0.0);
     if (duplicatedBlocks > 0) {
-      Violation violation = createViolation(resource, rule, duplicatedBlocks);
-      context.saveViolation(violation);
+      createIssue(resource, rule, duplicatedBlocks, perspectives);
     }
   }
 
-  @SuppressWarnings("rawtypes")
-  private Violation createViolation(Resource resource, org.sonar.api.rules.Rule rule, double duplicatedBlocks) {
-    Violation violation = Violation.create(rule, resource).setCost(duplicatedBlocks);
-    violation.setMessage((int) duplicatedBlocks + " duplicated blocks of code.");
-    return violation;
+  private void createIssue(Resource resource, RuleKey ruleKey, double duplicatedBlocks, ResourcePerspectives perspectives) {
+    createIssue(resource, perspectives, ruleKey, duplicatedBlocks, (int) duplicatedBlocks + " duplicated blocks of code.");
   }
 }

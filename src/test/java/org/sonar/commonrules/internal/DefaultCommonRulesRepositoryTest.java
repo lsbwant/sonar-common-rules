@@ -19,15 +19,12 @@
  */
 package org.sonar.commonrules.internal;
 
-import com.google.common.collect.ImmutableMap;
 import org.junit.Test;
-import org.sonar.api.rules.Rule;
+import org.sonar.api.server.rule.RulesDefinition;
+import org.sonar.api.server.rule.RulesDefinition.Repository;
 import org.sonar.commonrules.api.CommonRulesRepository;
 
-import java.util.Collections;
-
 import static org.fest.assertions.Assertions.assertThat;
-import static org.fest.assertions.Fail.fail;
 
 public final class DefaultCommonRulesRepositoryTest {
 
@@ -42,73 +39,57 @@ public final class DefaultCommonRulesRepositoryTest {
       .enableInsufficientBranchCoverageRule(42.0)
       .enableInsufficientLineCoverageRule(42.0)
       .enableSkippedUnitTestsRule();
-    assertThat(repository.rules()).hasSize(CommonRulesConstants.CLASSES.size());
+
+    RulesDefinition.Context context = new RulesDefinition.Context();
+    repository.define(context);
+
+    assertThat(context.repository("common-java").rules()).hasSize(CommonRulesConstants.CLASSES.size());
   }
 
   @Test
   public void test_metadata() throws Exception {
-    assertThat(repository.getKey()).isEqualTo(CommonRulesConstants.REPO_KEY_PREFIX + "java");
-    assertThat(repository.getName()).isEqualTo("Common SonarQube");
-    assertThat(repository.getLanguage()).isEqualTo("java");
+    RulesDefinition.Context context = new RulesDefinition.Context();
+    repository.define(context);
+
+    assertThat(context.repository("common-java").key()).isEqualTo(CommonRulesConstants.REPO_KEY_PREFIX + "java");
+    assertThat(context.repository("common-java").name()).isEqualTo("Common SonarQube");
+    assertThat(context.repository("common-java").language()).isEqualTo("java");
   }
 
   @Test
   public void all_rules_are_disabled() {
-    assertThat(repository.createRules()).isEmpty();
-    assertThat(repository.rules()).isEmpty();
-    assertThat(repository.rule("xxx")).isNull();
-  }
+    RulesDefinition.Context context = new RulesDefinition.Context();
+    repository.define(context);
 
-  @Test
-  public void enable_rule() {
-    repository.enableDuplicatedBlocksRule();
-
-    assertThat(repository.createRules()).hasSize(1);
-    assertThat(repository.rules()).hasSize(1);
-    assertThat(repository.rule(CommonRulesRepository.RULE_DUPLICATED_BLOCKS)).isNotNull();
+    assertThat(context.repository("common-java").rules()).isEmpty();
   }
 
   @Test
   public void enable_rule_with_default_param_value() {
     repository.enableInsufficientCommentDensityRule(null);
 
-    assertThat(repository.createRules()).hasSize(1);
-    assertThat(repository.rules()).hasSize(1);
-    Rule rule = repository.rule(CommonRulesRepository.RULE_INSUFFICIENT_COMMENT_DENSITY);
+    RulesDefinition.Context context = new RulesDefinition.Context();
+    repository.define(context);
+
+    Repository repo = context.repository("common-java");
+    assertThat(repo.rules()).hasSize(1);
+    org.sonar.api.server.rule.RulesDefinition.Rule rule = repo.rule(CommonRulesRepository.RULE_INSUFFICIENT_COMMENT_DENSITY);
     assertThat(rule).isNotNull();
-    assertThat(Double.parseDouble(rule.getParam(CommonRulesRepository.PARAM_MIN_COMMENT_DENSITY).getDefaultValue())).isEqualTo(25.0);
+    assertThat(Double.parseDouble(rule.param(CommonRulesRepository.PARAM_MIN_COMMENT_DENSITY).defaultValue())).isEqualTo(25.0);
   }
 
   @Test
   public void override_default_param_value() {
     repository.enableInsufficientCommentDensityRule(42.0);
 
-    assertThat(repository.createRules()).hasSize(1);
-    assertThat(repository.rules()).hasSize(1);
-    Rule rule = repository.rule(CommonRulesRepository.RULE_INSUFFICIENT_COMMENT_DENSITY);
+    RulesDefinition.Context context = new RulesDefinition.Context();
+    repository.define(context);
+
+    Repository repo = context.repository("common-java");
+    assertThat(repo.rules()).hasSize(1);
+    org.sonar.api.server.rule.RulesDefinition.Rule rule = repo.rule(CommonRulesRepository.RULE_INSUFFICIENT_COMMENT_DENSITY);
     assertThat(rule).isNotNull();
-    assertThat(Double.parseDouble(rule.getParam(CommonRulesRepository.PARAM_MIN_COMMENT_DENSITY).getDefaultValue())).isEqualTo(42.0);
+    assertThat(Double.parseDouble(rule.param(CommonRulesRepository.PARAM_MIN_COMMENT_DENSITY).defaultValue())).isEqualTo(42.0);
   }
 
-  @Test
-  public void fail_if_rule_does_not_exist() {
-    // typo
-    try {
-      repository.enableRule("xxx", Collections.<String, String>emptyMap());
-      fail();
-    } catch (IllegalStateException e) {
-      assertThat(e).hasMessage("Unknown rule: xxx");
-    }
-  }
-
-  @Test
-  public void fail_if_rule_param_does_not_exist() {
-    // typo
-    try {
-      repository.enableRule(CommonRulesRepository.RULE_INSUFFICIENT_LINE_COVERAGE, ImmutableMap.of("xxx", "yyy"));
-      fail();
-    } catch (IllegalStateException e) {
-      assertThat(e).hasMessage("Rule 'InsufficientLineCoverage' has no parameter named 'xxx'");
-    }
-  }
 }

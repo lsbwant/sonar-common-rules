@@ -22,14 +22,13 @@ package org.sonar.commonrules.internal.checks;
 import org.junit.Before;
 import org.junit.Test;
 import org.sonar.api.batch.DecoratorContext;
+import org.sonar.api.component.ResourcePerspectives;
+import org.sonar.api.issue.Issuable;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.measures.Measure;
 import org.sonar.api.resources.Qualifiers;
 import org.sonar.api.resources.Resource;
-import org.sonar.api.rules.Violation;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -38,21 +37,23 @@ import static org.mockito.Mockito.when;
 public class SkippedUnitTestsCheckTest {
 
   private SkippedUnitTestsCheck check;
-  private Resource<?> resource;
+  private Resource resource;
   private DecoratorContext context;
+  private ResourcePerspectives perspectives;
 
   @Before
   public void before() {
     check = new SkippedUnitTestsCheck();
     resource = mock(Resource.class);
     context = mock(DecoratorContext.class);
+    perspectives = mock(ResourcePerspectives.class);
   }
 
   @Test
   public void checkShouldNotGenerateViolationIfNotTest() {
     when(resource.getQualifier()).thenReturn(Qualifiers.FILE);
-    check.checkResource(resource, context, null);
-    verify(context, times(0)).saveViolation(any(Violation.class));
+    check.checkResource(resource, context, null, perspectives);
+    verify(perspectives, times(0)).as(Issuable.class, resource);
   }
 
   @Test
@@ -60,13 +61,13 @@ public class SkippedUnitTestsCheckTest {
     when(resource.getQualifier()).thenReturn(Qualifiers.UNIT_TEST_FILE);
 
     // this test has no "skipped_test" measure
-    check.checkResource(resource, context, null);
-    verify(context, times(0)).saveViolation(any(Violation.class));
+    check.checkResource(resource, context, null, perspectives);
+    verify(perspectives, times(0)).as(Issuable.class, resource);
 
     // this is the case of a test file that has no skipped test
     when(context.getMeasure(CoreMetrics.SKIPPED_TESTS)).thenReturn(new Measure(CoreMetrics.SKIPPED_TESTS, 0.0));
-    check.checkResource(resource, context, null);
-    verify(context, times(0)).saveViolation(any(Violation.class));
+    check.checkResource(resource, context, null, mock(ResourcePerspectives.class));
+    verify(perspectives, times(0)).as(Issuable.class, resource);
   }
 
   @Test
@@ -74,9 +75,9 @@ public class SkippedUnitTestsCheckTest {
     when(resource.getQualifier()).thenReturn(Qualifiers.UNIT_TEST_FILE);
     when(context.getMeasure(CoreMetrics.SKIPPED_TESTS)).thenReturn(new Measure(CoreMetrics.SKIPPED_TESTS, 4.0));
 
-    check.checkResource(resource, context, null);
+    check.checkResource(resource, context, null, perspectives);
 
-    verify(context, times(1)).saveViolation(argThat(new ViolationCostMatcher(4)));
+    verify(perspectives, times(1)).as(Issuable.class, resource);
   }
 
 }

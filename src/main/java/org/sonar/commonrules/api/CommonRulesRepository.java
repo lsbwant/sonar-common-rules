@@ -19,10 +19,7 @@
  */
 package org.sonar.commonrules.api;
 
-import org.sonar.api.rules.Rule;
-
 import javax.annotation.Nullable;
-import java.util.List;
 
 /**
  * This is not an extension point. Implementation is provided by the library.
@@ -42,7 +39,6 @@ public interface CommonRulesRepository {
   String RULE_SKIPPED_UNIT_TESTS = "SkippedUnitTests";
   String RULE_FAILED_UNIT_TESTS = "FailedUnitTests";
 
-
   CommonRulesRepository enableInsufficientBranchCoverageRule(@Nullable Double minBranchCoverageRatio);
 
   CommonRulesRepository enableInsufficientLineCoverageRule(@Nullable Double minLineCoverageRatio);
@@ -54,15 +50,4 @@ public interface CommonRulesRepository {
   CommonRulesRepository enableSkippedUnitTestsRule();
 
   CommonRulesRepository enableFailedUnitTestsRule();
-
-  /**
-   * Used for unit-testing
-   */
-  List<Rule> rules();
-
-  /**
-   * Used for unit-testing
-   */
-  @Nullable
-  Rule rule(String ruleKey);
 }

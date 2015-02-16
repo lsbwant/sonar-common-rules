@@ -20,10 +20,11 @@
 package org.sonar.commonrules.internal.checks;
 
 import org.sonar.api.batch.DecoratorContext;
+import org.sonar.api.component.ResourcePerspectives;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.measures.MeasureUtils;
 import org.sonar.api.resources.Resource;
-import org.sonar.api.rules.Violation;
+import org.sonar.api.rule.RuleKey;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.check.RuleProperty;
@@ -38,12 +39,11 @@ public class CommentDensityCheck extends CommonCheck {
 
   private static final double DEFAULT_MIN_DENSITY = 25;
 
-  @RuleProperty(key ="minimumCommentDensity", description = "The minimum required comment density.", defaultValue = "" + DEFAULT_MIN_DENSITY)
+  @RuleProperty(key = "minimumCommentDensity", description = "The minimum required comment density.", defaultValue = "" + DEFAULT_MIN_DENSITY)
   private double minimumCommentDensity = DEFAULT_MIN_DENSITY;
 
-  @SuppressWarnings("rawtypes")
   @Override
-  public void checkResource(Resource resource, DecoratorContext context, org.sonar.api.rules.Rule rule) {
+  public void checkResource(Resource resource, DecoratorContext context, RuleKey rule, ResourcePerspectives perspectives) {
     if (minimumCommentDensity < 0 || minimumCommentDensity >= 100) {
       throw new IllegalArgumentException(minimumCommentDensity
         + " is not a valid value for minimum required comment density for rule 'CommentDensityCheck' (must be >= 0 and < 100).");
@@ -55,16 +55,13 @@ public class CommentDensityCheck extends CommonCheck {
       double commentLines = MeasureUtils.getValue(context.getMeasure(CoreMetrics.COMMENT_LINES), 0.0);
       double missingCommentLines = Math.ceil(minimumCommentDensity * linesOfCode / (100 - minimumCommentDensity) - commentLines);
 
-      Violation violation = createViolation(resource, rule, missingCommentLines);
-      context.saveViolation(violation);
+      createIssue(resource, rule, missingCommentLines, perspectives);
     }
   }
 
-  private Violation createViolation(Resource<?> resource, org.sonar.api.rules.Rule rule, double missingCommentLines) {
-    Violation violation = Violation.create(rule, resource).setCost(missingCommentLines);
-    violation.setMessage((int) missingCommentLines + " more comment lines need to be written to reach the minimum threshold of "
+  private void createIssue(Resource resource, RuleKey ruleKey, double missingCommentLines, ResourcePerspectives perspectives) {
+    createIssue(resource, perspectives, ruleKey, missingCommentLines, (int) missingCommentLines + " more comment lines need to be written to reach the minimum threshold of "
       + minimumCommentDensity + "% comment density.");
-    return violation;
   }
 
   public void setMinimumCommentDensity(int threshold) {

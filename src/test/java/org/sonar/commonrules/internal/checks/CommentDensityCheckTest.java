@@ -24,15 +24,14 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.sonar.api.batch.DecoratorContext;
+import org.sonar.api.component.ResourcePerspectives;
+import org.sonar.api.issue.Issuable;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.measures.Measure;
 import org.sonar.api.resources.Resource;
-import org.sonar.api.rules.Violation;
+import org.sonar.api.resources.Scopes;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -42,6 +41,7 @@ public class CommentDensityCheckTest {
   private CommentDensityCheck check;
   private Resource resource;
   private DecoratorContext context;
+  private ResourcePerspectives perspectives;
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();
@@ -51,39 +51,40 @@ public class CommentDensityCheckTest {
     check = new CommentDensityCheck();
     resource = mock(Resource.class);
     context = mock(DecoratorContext.class);
+    perspectives = mock(ResourcePerspectives.class);
   }
 
   @Test
   public void checkShouldNotGenerateViolationOnFileWithGoodCommentDensity() {
-    when(resource.getScope()).thenReturn(Resource.SCOPE_ENTITY);
+    when(resource.getScope()).thenReturn(Scopes.FILE);
     when(context.getMeasure(CoreMetrics.COMMENT_LINES_DENSITY)).thenReturn(new Measure(CoreMetrics.COMMENT_LINES_DENSITY, 30.0));
 
-    check.checkResource(resource, context, null);
+    check.checkResource(resource, context, null, perspectives);
 
-    verify(context, times(0)).saveViolation(any(Violation.class));
+    verify(perspectives, times(0)).as(Issuable.class, resource);
   }
 
   @Test
   public void checkShouldNotGenerateViolationOnFileWithoutCommentDensity() {
-    when(resource.getScope()).thenReturn(Resource.SCOPE_ENTITY);
+    when(resource.getScope()).thenReturn(Scopes.FILE);
     when(context.getMeasure(CoreMetrics.COMMENT_LINES_DENSITY)).thenReturn(null);
 
-    check.checkResource(resource, context, null);
+    check.checkResource(resource, context, null, perspectives);
 
-    verify(context, times(0)).saveViolation(any(Violation.class));
+    verify(perspectives, times(0)).as(Issuable.class, resource);
   }
 
   @Test
   public void checkShoulGenerateViolationOnFileWithBadCommentDensity() {
     check.setMinimumCommentDensity(20);
-    when(resource.getScope()).thenReturn(Resource.SCOPE_ENTITY);
+    when(resource.getScope()).thenReturn(Scopes.FILE);
     when(context.getMeasure(CoreMetrics.COMMENT_LINES_DENSITY)).thenReturn(new Measure(CoreMetrics.COMMENT_LINES_DENSITY, 16.6));
     when(context.getMeasure(CoreMetrics.NCLOC)).thenReturn(new Measure(CoreMetrics.NCLOC, 100.0));
     when(context.getMeasure(CoreMetrics.COMMENT_LINES)).thenReturn(new Measure(CoreMetrics.COMMENT_LINES, 20.0));
 
-    check.checkResource(resource, context, null);
+    check.checkResource(resource, context, null, perspectives);
 
-    verify(context, times(1)).saveViolation(argThat(new ViolationCostMatcher(5)));
+    verify(perspectives, times(1)).as(Issuable.class, resource);
   }
 
   /**
@@ -96,9 +97,9 @@ public class CommentDensityCheckTest {
     thrown.expect(IllegalArgumentException.class);
     thrown.expectMessage("100.0 is not a valid value for minimum required comment density for rule 'CommentDensityCheck' (must be >= 0 and < 100).");
 
-    check.checkResource(resource, context, null);
+    check.checkResource(resource, context, null, perspectives);
 
-    verify(context, never()).saveViolation(any(Violation.class));
+    verify(perspectives, times(0)).as(Issuable.class, resource);
   }
 
   /**
@@ -111,9 +112,9 @@ public class CommentDensityCheckTest {
     thrown.expect(IllegalArgumentException.class);
     thrown.expectMessage("-5.0 is not a valid value for minimum required comment density for rule 'CommentDensityCheck' (must be >= 0 and < 100).");
 
-    check.checkResource(resource, context, null);
+    check.checkResource(resource, context, null, mock(ResourcePerspectives.class));
 
-    verify(context, never()).saveViolation(any(Violation.class));
+    verify(perspectives, times(0)).as(Issuable.class, resource);
   }
 
 }

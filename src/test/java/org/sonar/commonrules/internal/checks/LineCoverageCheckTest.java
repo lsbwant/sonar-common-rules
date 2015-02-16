@@ -22,13 +22,13 @@ package org.sonar.commonrules.internal.checks;
 import org.junit.Before;
 import org.junit.Test;
 import org.sonar.api.batch.DecoratorContext;
+import org.sonar.api.component.ResourcePerspectives;
+import org.sonar.api.issue.Issuable;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.measures.Measure;
 import org.sonar.api.resources.Resource;
-import org.sonar.api.rules.Violation;
+import org.sonar.api.resources.Scopes;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -39,45 +39,47 @@ public class LineCoverageCheckTest {
   private LineCoverageCheck check;
   private Resource resource;
   private DecoratorContext context;
+  private ResourcePerspectives perspectives;
 
   @Before
   public void before() {
     check = new LineCoverageCheck();
     resource = mock(Resource.class);
     context = mock(DecoratorContext.class);
+    perspectives = mock(ResourcePerspectives.class);
   }
 
   @Test
   public void checkShouldNotGenerateViolationOnFileWithGoodLineCoverage() {
-    when(resource.getScope()).thenReturn(Resource.SCOPE_ENTITY);
+    when(resource.getScope()).thenReturn(Scopes.FILE);
     when(context.getMeasure(CoreMetrics.LINE_COVERAGE)).thenReturn(new Measure(CoreMetrics.LINE_COVERAGE, 85.0));
 
-    check.checkResource(resource, context, null);
+    check.checkResource(resource, context, null, perspectives);
 
-    verify(context, times(0)).saveViolation(any(Violation.class));
+    verify(perspectives, times(0)).as(Issuable.class, resource);
   }
 
   @Test
   public void checkShouldNotGenerateViolationOnFileWithoutLineCoverage() {
-    when(resource.getScope()).thenReturn(Resource.SCOPE_ENTITY);
+    when(resource.getScope()).thenReturn(Scopes.FILE);
     when(context.getMeasure(CoreMetrics.LINE_COVERAGE)).thenReturn(null);
 
-    check.checkResource(resource, context, null);
+    check.checkResource(resource, context, null, perspectives);
 
-    verify(context, times(0)).saveViolation(any(Violation.class));
+    verify(perspectives, times(0)).as(Issuable.class, resource);
   }
 
   @Test
   public void checkShoulGenerateViolationOnFileWithBadLineCoverage() {
     check.setMinimumLineCoverageRatio(60);
-    when(resource.getScope()).thenReturn(Resource.SCOPE_ENTITY);
+    when(resource.getScope()).thenReturn(Scopes.FILE);
     when(context.getMeasure(CoreMetrics.LINE_COVERAGE)).thenReturn(new Measure(CoreMetrics.LINE_COVERAGE, 20.0));
     when(context.getMeasure(CoreMetrics.LINES_TO_COVER)).thenReturn(new Measure(CoreMetrics.LINES_TO_COVER, 100.0));
     when(context.getMeasure(CoreMetrics.UNCOVERED_LINES)).thenReturn(new Measure(CoreMetrics.UNCOVERED_LINES, 80.0));
 
-    check.checkResource(resource, context, null);
+    check.checkResource(resource, context, null, perspectives);
 
-    verify(context, times(1)).saveViolation(argThat(new ViolationCostMatcher(40)));
+    verify(perspectives, times(1)).as(Issuable.class, resource);
   }
 
 }

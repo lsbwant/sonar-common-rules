@@ -22,14 +22,13 @@ package org.sonar.commonrules.internal.checks;
 import org.junit.Before;
 import org.junit.Test;
 import org.sonar.api.batch.DecoratorContext;
+import org.sonar.api.component.ResourcePerspectives;
+import org.sonar.api.issue.Issuable;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.measures.Measure;
 import org.sonar.api.resources.Qualifiers;
 import org.sonar.api.resources.Resource;
-import org.sonar.api.rules.Violation;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -38,21 +37,23 @@ import static org.mockito.Mockito.when;
 public class FailedUnitTestsCheckTest {
 
   private FailedUnitTestsCheck check;
-  private Resource<?> resource;
+  private Resource resource;
   private DecoratorContext context;
+  private ResourcePerspectives perspectives;
 
   @Before
   public void before() {
     check = new FailedUnitTestsCheck();
     resource = mock(Resource.class);
     context = mock(DecoratorContext.class);
+    perspectives = mock(ResourcePerspectives.class);
   }
 
   @Test
   public void checkShouldNotGenerateViolationIfNotTest() {
     when(resource.getQualifier()).thenReturn(Qualifiers.FILE);
-    check.checkResource(resource, context, null);
-    verify(context, times(0)).saveViolation(any(Violation.class));
+    check.checkResource(resource, context, null, perspectives);
+    verify(perspectives, times(0)).as(Issuable.class, resource);
   }
 
   @Test
@@ -60,14 +61,14 @@ public class FailedUnitTestsCheckTest {
     when(resource.getQualifier()).thenReturn(Qualifiers.UNIT_TEST_FILE);
 
     // this test has no "test_errors" or "test_failures" measure
-    check.checkResource(resource, context, null);
-    verify(context, times(0)).saveViolation(any(Violation.class));
+    check.checkResource(resource, context, null, perspectives);
+    verify(perspectives, times(0)).as(Issuable.class, resource);
 
     // this is the case of a test file that has only successful tests
     when(context.getMeasure(CoreMetrics.TEST_ERRORS)).thenReturn(new Measure(CoreMetrics.TEST_ERRORS, 0.0));
     when(context.getMeasure(CoreMetrics.TEST_FAILURES)).thenReturn(new Measure(CoreMetrics.TEST_FAILURES, 0.0));
-    check.checkResource(resource, context, null);
-    verify(context, times(0)).saveViolation(any(Violation.class));
+    check.checkResource(resource, context, null, perspectives);
+    verify(perspectives, times(0)).as(Issuable.class, resource);
   }
 
   @Test
@@ -76,9 +77,9 @@ public class FailedUnitTestsCheckTest {
     when(context.getMeasure(CoreMetrics.TEST_ERRORS)).thenReturn(new Measure(CoreMetrics.TEST_ERRORS, 2.0));
     when(context.getMeasure(CoreMetrics.TEST_FAILURES)).thenReturn(new Measure(CoreMetrics.TEST_FAILURES, 3.0));
 
-    check.checkResource(resource, context, null);
+    check.checkResource(resource, context, null, perspectives);
 
-    verify(context, times(1)).saveViolation(argThat(new ViolationCostMatcher(5)));
+    verify(perspectives, times(1)).as(Issuable.class, resource);
   }
 
 }

@@ -20,11 +20,12 @@
 package org.sonar.commonrules.internal.checks;
 
 import org.sonar.api.batch.DecoratorContext;
+import org.sonar.api.component.ResourcePerspectives;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.measures.MeasureUtils;
 import org.sonar.api.resources.Resource;
 import org.sonar.api.resources.ResourceUtils;
-import org.sonar.api.rules.Violation;
+import org.sonar.api.rule.RuleKey;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 
@@ -36,15 +37,16 @@ import org.sonar.check.Rule;
     "Either they should be activated again (and updated) or they should be removed.</p>")
 public class SkippedUnitTestsCheck extends CommonCheck {
 
-  @SuppressWarnings("rawtypes")
   @Override
-  public void checkResource(Resource resource, DecoratorContext context, org.sonar.api.rules.Rule rule) {
+  public void checkResource(Resource resource, DecoratorContext context, RuleKey ruleKey, ResourcePerspectives perspectives) {
     double skippedTests = MeasureUtils.getValue(context.getMeasure(CoreMetrics.SKIPPED_TESTS), 0.0);
     if (ResourceUtils.isUnitTestClass(resource) && skippedTests > 0) {
-      Violation violation = Violation.create(rule, resource).setCost(skippedTests);
-      violation.setMessage("Some tests are skipped. You should activate them or remove them.");
-      context.saveViolation(violation);
+      createIssue(resource, ruleKey, skippedTests, perspectives);
     }
+  }
+
+  private void createIssue(Resource resource, RuleKey ruleKey, double skippedTests, ResourcePerspectives perspectives) {
+    createIssue(resource, perspectives, ruleKey, skippedTests, "Some tests are skipped. You should activate them or remove them.");
   }
 
 }

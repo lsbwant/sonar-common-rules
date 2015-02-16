@@ -20,10 +20,11 @@
 package org.sonar.commonrules.internal.checks;
 
 import org.sonar.api.batch.DecoratorContext;
+import org.sonar.api.component.ResourcePerspectives;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.measures.MeasureUtils;
 import org.sonar.api.resources.Resource;
-import org.sonar.api.rules.Violation;
+import org.sonar.api.rule.RuleKey;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.check.RuleProperty;
@@ -42,9 +43,8 @@ public class BranchCoverageCheck extends CommonCheck {
   @RuleProperty(key = CommonRulesRepository.PARAM_MIN_BRANCH_COVERAGE, description = "The minimum required branch coverage ratio.", defaultValue = "" + DEFAULT_RATIO)
   private double minimumBranchCoverageRatio = DEFAULT_RATIO;
 
-  @SuppressWarnings("rawtypes")
   @Override
-  public void checkResource(Resource resource, DecoratorContext context, org.sonar.api.rules.Rule rule) {
+  public void checkResource(Resource resource, DecoratorContext context, RuleKey rule, ResourcePerspectives perspectives) {
     double lineCoverage = MeasureUtils.getValue(context.getMeasure(CoreMetrics.BRANCH_COVERAGE), 0.0);
     if (context.getMeasure(CoreMetrics.BRANCH_COVERAGE) != null && lineCoverage < minimumBranchCoverageRatio) {
       double uncoveredConditions = MeasureUtils.getValue(context.getMeasure(CoreMetrics.UNCOVERED_CONDITIONS), 0.0);
@@ -52,18 +52,14 @@ public class BranchCoverageCheck extends CommonCheck {
       double conditionsToCoverToReachThreshold = Math.ceil((conditionsToCover * minimumBranchCoverageRatio / 100)
         - (conditionsToCover - uncoveredConditions));
 
-      Violation violation = createViolation(resource, rule, conditionsToCoverToReachThreshold);
-      context.saveViolation(violation);
+      createIssue(resource, rule, conditionsToCoverToReachThreshold, perspectives);
     }
   }
 
-  @SuppressWarnings("rawtypes")
-  private Violation createViolation(Resource resource, org.sonar.api.rules.Rule rule, double conditionsToCoverToReachThreshold) {
-    Violation violation = Violation.create(rule, resource).setCost(conditionsToCoverToReachThreshold);
-    violation.setMessage((int) conditionsToCoverToReachThreshold
+  private void createIssue(Resource resource, RuleKey ruleKey, double conditionsToCoverToReachThreshold, ResourcePerspectives perspectives) {
+    createIssue(resource, perspectives, ruleKey, conditionsToCoverToReachThreshold, (int) conditionsToCoverToReachThreshold
       + " more branches need to be covered by unit tests to reach the minimum threshold of " + minimumBranchCoverageRatio
       + "% branch coverage.");
-    return violation;
   }
 
   public void setMinimumBranchCoverageRatio(int threshold) {

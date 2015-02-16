@@ -20,10 +20,11 @@
 package org.sonar.commonrules.internal.checks;
 
 import org.sonar.api.batch.DecoratorContext;
+import org.sonar.api.component.ResourcePerspectives;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.measures.MeasureUtils;
 import org.sonar.api.resources.Resource;
-import org.sonar.api.rules.Violation;
+import org.sonar.api.rule.RuleKey;
 import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.check.RuleProperty;
@@ -41,27 +42,22 @@ public class LineCoverageCheck extends CommonCheck {
   @RuleProperty(key = "minimumLineCoverageRatio", description = "The minimum required line coverage ratio.", defaultValue = "" + DEFAULT_MIN_RATIO)
   private double minimumLineCoverageRatio = DEFAULT_MIN_RATIO;
 
-  @SuppressWarnings("rawtypes")
   @Override
-  public void checkResource(Resource resource, DecoratorContext context, org.sonar.api.rules.Rule rule) {
+  public void checkResource(Resource resource, DecoratorContext context, RuleKey ruleKey, ResourcePerspectives perspectives) {
     double lineCoverage = MeasureUtils.getValue(context.getMeasure(CoreMetrics.LINE_COVERAGE), 0.0);
     if (context.getMeasure(CoreMetrics.LINE_COVERAGE) != null && lineCoverage < minimumLineCoverageRatio) {
       double uncoveredLines = MeasureUtils.getValue(context.getMeasure(CoreMetrics.UNCOVERED_LINES), 0.0);
       double linesToCover = MeasureUtils.getValue(context.getMeasure(CoreMetrics.LINES_TO_COVER), 0.0);
       double linesToCoverToReachThreshold = Math.ceil((linesToCover * minimumLineCoverageRatio / 100) - (linesToCover - uncoveredLines));
 
-      Violation violation = createViolation(resource, rule, linesToCoverToReachThreshold);
-      context.saveViolation(violation);
+      createIssue(resource, ruleKey, linesToCoverToReachThreshold, perspectives);
     }
   }
 
-  @SuppressWarnings("rawtypes")
-  private Violation createViolation(Resource resource, org.sonar.api.rules.Rule rule, double linesToCoverToReachThreshold) {
-    Violation violation = Violation.create(rule, resource).setCost(linesToCoverToReachThreshold);
-    violation.setMessage((int) linesToCoverToReachThreshold
+  private void createIssue(Resource resource, RuleKey ruleKey, double linesToCoverToReachThreshold, ResourcePerspectives perspectives) {
+    createIssue(resource, perspectives, ruleKey, linesToCoverToReachThreshold, (int) linesToCoverToReachThreshold
       + " more lines of code need to be covered by unit tests to reach the minimum threshold of " + minimumLineCoverageRatio
       + "% lines coverage.");
-    return violation;
   }
 
   public void setMinimumLineCoverageRatio(int threshold) {

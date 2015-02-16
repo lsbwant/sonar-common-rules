@@ -20,7 +20,9 @@
 package org.sonar.commonrules.api;
 
 import org.junit.Test;
-import org.sonar.api.rules.Rule;
+import org.sonar.api.server.rule.RulesDefinition;
+import org.sonar.api.server.rule.RulesDefinition.Repository;
+import org.sonar.commonrules.internal.DefaultCommonRulesRepository;
 
 import java.util.List;
 
@@ -53,20 +55,26 @@ public final class CommonRulesEngineTest {
   @Test
   public void enable_rules() throws Exception {
     JavaCommonRulesEngine engine = new JavaCommonRulesEngine();
-    CommonRulesRepository repo = engine.newRepository();
+    DefaultCommonRulesRepository repo = (DefaultCommonRulesRepository) engine.newRepository();
 
-    assertThat(repo.rules()).hasSize(3);
-    assertThat(repo.rule(CommonRulesRepository.RULE_DUPLICATED_BLOCKS)).isNotNull();
-    assertThat(repo.rule(CommonRulesRepository.RULE_INSUFFICIENT_COMMENT_DENSITY)).isNull();
+    RulesDefinition.Context context = new RulesDefinition.Context();
+    repo.define(context);
+
+    assertThat(context.repositories()).hasSize(1);
+    Repository repository = context.repository("common-java");
+
+    assertThat(repository.rules()).hasSize(3);
+    assertThat(repository.rule(CommonRulesRepository.RULE_DUPLICATED_BLOCKS)).isNotNull();
+    assertThat(repository.rule(CommonRulesRepository.RULE_INSUFFICIENT_COMMENT_DENSITY)).isNull();
 
     // hardcoded default value
-    Rule branchCoverage = repo.rule(CommonRulesRepository.RULE_INSUFFICIENT_BRANCH_COVERAGE);
+    org.sonar.api.server.rule.RulesDefinition.Rule branchCoverage = repository.rule(CommonRulesRepository.RULE_INSUFFICIENT_BRANCH_COVERAGE);
     assertThat(branchCoverage).isNotNull();
-    assertThat(Double.parseDouble(branchCoverage.getParam(CommonRulesRepository.PARAM_MIN_BRANCH_COVERAGE).getDefaultValue())).isEqualTo(65.0);
+    assertThat(Double.parseDouble(branchCoverage.param(CommonRulesRepository.PARAM_MIN_BRANCH_COVERAGE).defaultValue())).isEqualTo(65.0);
 
-    Rule lineCoverage = repo.rule(CommonRulesRepository.RULE_INSUFFICIENT_LINE_COVERAGE);
+    org.sonar.api.server.rule.RulesDefinition.Rule lineCoverage = repository.rule(CommonRulesRepository.RULE_INSUFFICIENT_LINE_COVERAGE);
     assertThat(lineCoverage).isNotNull();
-    assertThat(Double.parseDouble(lineCoverage.getParam(CommonRulesRepository.PARAM_MIN_LINE_COVERAGE).getDefaultValue())).isEqualTo(82.0);
+    assertThat(Double.parseDouble(lineCoverage.param(CommonRulesRepository.PARAM_MIN_LINE_COVERAGE).defaultValue())).isEqualTo(82.0);
   }
 
   @Test
@@ -76,7 +84,5 @@ public final class CommonRulesEngineTest {
 
     assertThat(extensions).hasSize(1);
     assertThat(extensions.get(0)).isInstanceOf(CommonRulesRepository.class);
-    CommonRulesRepository repo = (CommonRulesRepository) extensions.get(0);
-    assertThat(repo.rules()).hasSize(3);
   }
 }

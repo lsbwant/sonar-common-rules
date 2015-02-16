@@ -19,13 +19,18 @@
  */
 package org.sonar.commonrules.api;
 
-import org.sonar.api.batch.*;
-import org.sonar.api.checks.AnnotationCheckFactory;
+import org.sonar.api.batch.Decorator;
+import org.sonar.api.batch.DecoratorBarriers;
+import org.sonar.api.batch.DecoratorContext;
+import org.sonar.api.batch.DependedUpon;
+import org.sonar.api.batch.DependsUpon;
+import org.sonar.api.batch.fs.FileSystem;
+import org.sonar.api.batch.rule.CheckFactory;
+import org.sonar.api.batch.rule.Checks;
+import org.sonar.api.component.ResourcePerspectives;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.measures.Metric;
-import org.sonar.api.profiles.RulesProfile;
 import org.sonar.api.resources.Project;
-import org.sonar.api.resources.ProjectFileSystem;
 import org.sonar.api.resources.Resource;
 import org.sonar.api.resources.ResourceUtils;
 import org.sonar.commonrules.internal.CommonRulesConstants;
@@ -33,24 +38,22 @@ import org.sonar.commonrules.internal.DefaultCommonRulesRepository;
 import org.sonar.commonrules.internal.checks.CommonCheck;
 
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
-@DependsUpon(DecoratorBarriers.START_VIOLATIONS_GENERATION)
-@DependedUpon(DecoratorBarriers.END_OF_VIOLATIONS_GENERATION)
+@DependedUpon(value = DecoratorBarriers.ISSUES_ADDED)
 public abstract class CommonRulesDecorator implements Decorator {
 
-  private final ProjectFileSystem fs;
+  private final FileSystem fs;
   private final String language;
-  private final RulesProfile qProfile;
-  private AnnotationCheckFactory checkFactory;
-  private Collection<CommonCheck> activeChecks = Collections.emptyList();
+  private final CheckFactory checkFactory;
+  private final ResourcePerspectives perspectives;
+  private Checks<CommonCheck> checks;
 
-  public CommonRulesDecorator(String language, ProjectFileSystem fs, RulesProfile qProfile) {
+  public CommonRulesDecorator(String language, FileSystem fs, CheckFactory checkFactory, ResourcePerspectives perspectives) {
     this.language = language;
     this.fs = fs;
-    this.qProfile = qProfile;
+    this.checkFactory = checkFactory;
+    this.perspectives = perspectives;
   }
 
   public String language() {
@@ -59,25 +62,25 @@ public abstract class CommonRulesDecorator implements Decorator {
 
   @DependsUpon
   public List<Metric> dependsUponMetrics() {
-    return Arrays.asList(CoreMetrics.LINE_COVERAGE, CoreMetrics.COMMENT_LINES_DENSITY);
+    return Arrays.<Metric>asList(CoreMetrics.LINE_COVERAGE, CoreMetrics.COMMENT_LINES_DENSITY);
   }
 
   @Override
   public boolean shouldExecuteOnProject(Project project) {
-    boolean hasLangFiles = !fs.mainFiles(language).isEmpty() || !fs.testFiles(language).isEmpty();
-    if (hasLangFiles) {
-      checkFactory = AnnotationCheckFactory.create(qProfile, DefaultCommonRulesRepository.keyForLanguage(language), CommonRulesConstants.CLASSES);
-      activeChecks = checkFactory.getChecks();
+    if (!fs.hasFiles(fs.predicates().hasLanguage(language))) {
+      return false;
     }
-    return !activeChecks.isEmpty();
+    checks = checkFactory.create(DefaultCommonRulesRepository.keyForLanguage(language));
+    checks.addAnnotatedChecks(CommonRulesConstants.CLASSES);
+    return !checks.all().isEmpty();
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})
   public void decorate(Resource resource, DecoratorContext context) {
     // assume that all checks relate to files, not directories nor modules
     if (ResourceUtils.isEntity(resource) && resource.getLanguage() != null && resource.getLanguage().getKey().equals(language)) {
-      for (CommonCheck check : activeChecks) {
-        check.checkResource(resource, context, checkFactory.getActiveRule(check).getRule());
+      for (CommonCheck check : checks.all()) {
+        check.checkResource(resource, context, checks.ruleKey(check), perspectives);
       }
     }
   }
